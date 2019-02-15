@@ -1,0 +1,12 @@
+function compile(sourceCode) {
+  // do nothing for now
+  return sourceCode;
+}
+
+$(document).ready(function() {
+  $('.button-compile').click(function(){
+    const input = $('.editor-textbox').first().text();
+    const output = compile(input);
+    $('.output').first().text(output);
+  })
+})
