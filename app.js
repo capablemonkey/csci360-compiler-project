@@ -5,7 +5,7 @@ function compile(sourceCode) {
 
 $(document).ready(function() {
   $('.button-compile').click(function(){
-    const input = $('.editor-textbox').first().text();
+    const input = $('.editor-textbox').first().val();
     const output = compile(input);
     $('.output').first().text(output);
   })
