@@ -1,6 +1,8 @@
 function compile(sourceCode) {
   // do nothing for now
-  return sourceCode;
+  analyzer = new SourceAnalyzer();
+  return analyzer.getAnalysis();
+  //return sourceCode;
 }
 
 $(document).ready(function() {
