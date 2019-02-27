@@ -23,10 +23,10 @@ class SourceAnalyzer { // HOW TO IMPORT CLASSES???
   
     // Reads the function head of a function
     readHead(line) { 
-      var words = ["", "", "", ""];
-      var i = 0;
+      let words = ["", "", "", ""];
+      let i = 0;
       for (let j =  0; j < line.length; j++) {
-          var char = line[j];
+          let char = line[j];
           if (char != ' ' && char != '(' && char != ')')
               words[i] = words[i] + char.toString();
           else {
@@ -39,10 +39,10 @@ class SourceAnalyzer { // HOW TO IMPORT CLASSES???
   
     // Reads a declaration of a datatype and assigns a address to it
     readDeclaration (line) {
-      var words = ["", "", ""];
-      var i = 0;
+      let words = ["", "", ""];
+      let i = 0;
       for (let j = 0; j < line.length; j++) {
-          var char = line[j];
+          let char = line[j];
           if (char != ' ' && char != '=' && char != ';')
               words[i] = words[i] + char.toString();
           else
@@ -50,7 +50,7 @@ class SourceAnalyzer { // HOW TO IMPORT CLASSES???
           
       }
       this.declaration++;
-      var obj = {
+      let obj = {
           "codeType": "declaration",
           "dataType": words[0],
           "dataName": words[1],
@@ -61,10 +61,10 @@ class SourceAnalyzer { // HOW TO IMPORT CLASSES???
     }
   
     readLogic (line) {
-      var words = ["","","",""];
-      var i = 0;
+      let words = ["","","",""];
+      let i = 0;
       for (let j = 0; j < line.length; j++) {
-          var char = line[j];
+          let char = line[j];
           if (char == '+' || char == '-' || char == '/') {
               i++;
               words[i] = char.toString();
@@ -74,7 +74,7 @@ class SourceAnalyzer { // HOW TO IMPORT CLASSES???
           else
               i++;
       }
-      var obj = {
+      let obj = {
           "codeType": "logicOperation",
           "destination": words[0],
           "operand1": words[1],
@@ -85,9 +85,9 @@ class SourceAnalyzer { // HOW TO IMPORT CLASSES???
     }
   
     readForLoop(i, segment) {
-      var line = segment[i];
-      var header = line.substr(4, line.length-6).split(';');
-      var obj = {
+      let line = segment[i];
+      let header = line.substr(4, line.length-6).split(';');
+      let obj = {
           "codeType": "for",
           "initialization": this.readDeclaration(header[0]+";"),
           "termination": header[1],
@@ -95,22 +95,22 @@ class SourceAnalyzer { // HOW TO IMPORT CLASSES???
           "statement": []
       }
       i++;
-      var result = this.readInstruction(i, segment);
+      let result = this.readInstruction(i, segment);
       obj.statement = result.statement;
       return {"i": result.i, "for": obj};
     }
   
     readInstruction (i, segment) {
-      var instruction = [];
+      let instruction = [];
       while (i < segment.length) {
-          var line = segment[i];
+          let line = segment[i];
           if (line == "}")
               break;
           if (line.startsWith("int")) {
               instruction.push (this.readDeclaration (line));
               i++;
           } else if (line.startsWith("for")) {
-              var result = this.readForLoop(i, segment);
+              let result = this.readForLoop(i, segment);
               instruction.push (result.for);
               i = result.i;
           } else if (line.startsWith("return")) {
@@ -126,7 +126,7 @@ class SourceAnalyzer { // HOW TO IMPORT CLASSES???
   
     // Wrapper function called to generate analyzed code
     getAnalysis () {
-        var head = this.readHead(this.source[0]);
+        let head = this.readHead(this.source[0]);
         this.functionClass.returnType = head[0];
         this.functionClass.functionName = head[1];
         this.functionClass.parameter = {
@@ -137,7 +137,7 @@ class SourceAnalyzer { // HOW TO IMPORT CLASSES???
         };
         // ignore the first line
         this.functionClass.instruction = this.readInstruction(1, this.source).statement;
-        var final_result = JSON.stringify(this.functionClass, null, 2); // result is equivalent to python output
+        let final_result = JSON.stringify(this.functionClass, null, 2); // result is equivalent to python output
                                                                   // but appears in different order slightly
         return final_result;
     }
