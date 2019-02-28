@@ -16,7 +16,12 @@
     <div class="row">
       <div class="editor col-sm">
         <textarea class="editor-textbox code-font">
-          int main(int a) {return a + 3;}
+int main(){
+  int a [5] = { 16, 2, 77, 40, 12071 };
+  for(int i=0;i< 5;i++){
+    a[i] = 4;
+  }
+}
         </textarea>
         <button class="button-compile btn btn-lg btn-primary" type="">compile to x86</button>
       </div>
@@ -24,6 +29,12 @@
       <div class="output col-sm rounded bg-light code-font">
         OUTPUT HERE
       </div>
+    </div>
+    <!--After the input and output boxes-->
+    <div>
+      <h3>External Storage - Source Code</h3>
+      <table id="external-source" class="table-sm">
+      </table>
     </div>
   </div>
 </body>
