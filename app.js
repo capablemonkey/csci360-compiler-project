@@ -1,5 +1,6 @@
 function compile(sourceCode) {
-  return sourceCode;
+  analyzer = new SourceAnalyzer();
+  return analyzer.getAnalysis();
 }
 
 //Formats the data in an array of 1024 strings into an 8x128 table
