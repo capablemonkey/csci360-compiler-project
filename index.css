@@ -10,3 +10,8 @@
 .code-font {
   font-family: monospace;
 }
+
+.table-sm {
+  font-family: monospace;
+  font-weight: bold;
+}
