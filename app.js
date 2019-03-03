@@ -3,6 +3,22 @@ function compile(sourceCode) {
   return analyzer.getAnalysis();
 }
 
+//Removes unnecessary whitespaces and newlines
+//Maybe makes parsing easier or more robust
+function reduceSource(sourceCode){
+  let reducedCode = "";
+  const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  for(let i=0; i<sourceCode.length; i++){
+    if(sourceCode[i] != ' ' && sourceCode[i] != '\n')
+      reducedCode += sourceCode[i];
+    else if(sourceCode[i] === ' ' && alphabet.includes(sourceCode[i+1])){
+      if(reducedCode.length > 0 && alphabet.includes(reducedCode[reducedCode.length-1]))
+        reducedCode += sourceCode[i];
+    }
+  }
+  return reducedCode;
+}
+
 //Formats the data in an array of 1024 strings into an 8x128 table
 //then inserts the HTML code into element
 function fillTable(table, data){
@@ -32,9 +48,10 @@ function toBinary(sourceCode, fillTable){
 
 $(document).ready(function() {
   $('.button-compile').click(function(){
-    const input = $('.editor-textbox').first().val();
+    const input = reduceSource($('.editor-textbox').first().val());
     const output = compile(input);
     $('.output').first().text(output);
     toBinary(input,fillTable);
+    console.log(input);
   })
 })
