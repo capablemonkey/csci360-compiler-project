@@ -1,5 +1,27 @@
 function compile(parseTree) {
-  return parseTree;
+  // sample function:
+  const sumFunction = new Function(
+    [new Declaration("num", "edi")],
+    [
+      new Declaration("sum", 0),
+      new ForLoop(
+        new Declaration("i", 0),
+        new BinaryExpression("<", "i", "num"),
+        new Assignment("i", new BinaryExpression("+", "i", 1)),
+        [new Assignment("sum", new BinaryExpression("+", "sum", "i"))],
+      ),
+      new Return("sum")
+    ]
+  )
+
+  const symbolTable = {
+    "num": -4,
+    "sum": -8,
+    "i": -12
+  }
+
+  const assembly = sumFunction.toAssembly(symbolTable);
+  return assembly;
 }
 
 function parse(sourceCode) {
@@ -46,7 +68,7 @@ $(document).ready(function() {
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
 
     const assembly = compile(parseTree);
-    $('#assembly').text(assembly);
+    $('#assembly').text(assembly.join("\n"));
 
     toBinary(input,fillTable);
   })

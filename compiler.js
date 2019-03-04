@@ -35,7 +35,9 @@ class BinaryExpression extends Node {
   toAssembly(symbolTable) {
     const operatorToInstruction = {
       "+": "add",
-      "-": "sub"
+      "-": "sub",
+      ">": "cmp",
+      "<": "cmp"
     };
 
     if (!(this.operator in operatorToInstruction)) {
@@ -79,7 +81,54 @@ class Assignment extends Node {
 }
 
 class ForLoop extends Node {
-  // TODO
+  // TODO: create label for instruction after end of for loop
+  // TODO: create label for checking condition
+  // TODO: check condition
+  // TODO: just for now: return label within instruction list
+
+  /*
+  for (int i = 0; i < num; i = i + 1) becomes...
+
+    mov     dword ptr [rbp - 12], 0
+
+    .LABEL_LOOP_1_CONDITION:
+    mov     eax, dword ptr [rbp - 12]
+    cmp     eax, dword ptr [rbp - 4]  // num => [rbp - 4]
+    jge     .LABEL_LOOP_1_END
+    <statements inside loop>
+    mov     eax, dword ptr [rbp - 12]
+    add     eax, 1
+    mov     dword ptr [rbp - 12], eax
+    jmp     .LABEL_LOOP_1_CONDITION
+
+    .LABEL_LOOP_1_END:
+    <statements after loop>
+   */
+
+  constructor(declaration, condition, update, statements) {
+    super();
+    this.declaration = declaration;
+    this.condition = condition;
+    this.update = update;
+    this.statements = statements;
+  }
+
+  toAssembly(symbolTable) {
+    // TODO: refactor me into reusable method:
+    const childInstructions = this.statements.map(s => s.toAssembly(symbolTable)).flat();
+
+    let instructions = [
+      this.declaration.toAssembly(symbolTable),
+      ".LABEL_LOOP_1_CONDITION:",
+      this.condition.toAssembly(symbolTable),
+      "jge .LABEL_LOOP_1_END", // TODO: change based on condition
+      childInstructions,
+      this.update.toAssembly(symbolTable),
+      "jmp .LABEL_LOOP_1_CONDITION"
+    ].flat();
+
+    return instructions;
+  }
 }
 
 class Return extends Node {
@@ -96,6 +145,7 @@ class Return extends Node {
 }
 
 class Function extends Node {
+  // TOOD: use keyword arguments in all these constructors
   constructor(args, statements) {
     // args: Array<Declaration> ?? will they be initialized?
     // statements: Array<Node>
@@ -105,16 +155,22 @@ class Function extends Node {
   }
 
   toAssembly(symbolTable) {
+    if (!symbolTable) {
+      throw "Symbol table missing"
+    }
+
     let instructions = [
       "push rbp",
       "mov rbp, rsp"
     ]
 
-    // TODO: handle arguments (load them from registers)
+    // handle arguments (load them from registers)
+    const argumentInstructions = this.args.map(a => a.toAssembly(symbolTable)).flat();
+    instructions = instructions.concat(argumentInstructions);
 
     // call each of the statements.toAssembly() and then append their instructions to instructions
-    const bodyInstructions = this.statements.map(s => s.toAssembly(symbolTable)).flat()
-    instructions = instructions.concat(bodyInstructions)
+    const childInstructions = this.statements.map(s => s.toAssembly(symbolTable)).flat();
+    instructions = instructions.concat(childInstructions);
 
     instructions.push("pop rbp");
     instructions.push("ret");
@@ -133,17 +189,40 @@ int someFunction() {
  */
 
 
-const f = new Function([], [
-  new Declaration("foo", 5),
-  new Declaration("bar", 10),
-  new Assignment("result", new BinaryExpression("+", "foo", "bar")),
-  new Return("result")
-]);
+// const f = new Function([], [
+//   new Declaration("foo", 5),
+//   new Declaration("bar", 10),
+//   new Assignment("result", new BinaryExpression("+", "foo", "bar")),
+//   new Return("result")
+// ]);
+
+// const symbolTable = {
+//   "foo": -4,
+//   "bar": -8,
+//   "result": -12
+// }
+
+// f.toAssembly(symbolTable);
+
+
+const sumFunction = new Function(
+  [new Declaration("num", "edi")],
+  [
+    new Declaration("sum", 0),
+    new ForLoop(
+      new Declaration("i", 0),
+      new BinaryExpression("<", "i", "num"),
+      new Assignment("i", new BinaryExpression("+", "i", 1)),
+      [new Assignment("sum", new BinaryExpression("+", "sum", "i"))],
+    ),
+    new Return("sum")
+  ]
+)
 
 const symbolTable = {
-  "foo": -4,
-  "bar": -8,
-  "result": -12
+  "num": -4,
+  "sum": -8,
+  "i": -12
 }
 
-f.toAssembly(symbolTable);
+sumFunction.toAssembly(symbolTable);
