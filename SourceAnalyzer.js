@@ -1,15 +1,16 @@
 class SourceAnalyzer { // HOW TO IMPORT CLASSES???
-    constructor () {
+    constructor(source) {
         this.declaration = 1;
-        this.source = [ // replace this with parameter to make class robust to input
-            "int total(int num){",
-            "int sum=0;",
-            "for(int i=0;i<num;i=i+1){",
-            "sum=sum+a;",
-            "}",
-            "return sum;",
-            "}"
-        ];
+        this.source = source;
+        // this.source = [ // replace this with parameter to make class robust to input
+        //     "int total(int num){",
+        //     "int sum=0;",
+        //     "for(int i=0;i<num;i=i+1){",
+        //     "sum=sum+a;",
+        //     "}",
+        //     "return sum;",
+        //     "}"
+        // ];
         this.functionClass = {
             "returnType": "",
             "functionName": "",
@@ -137,8 +138,6 @@ class SourceAnalyzer { // HOW TO IMPORT CLASSES???
         };
         // ignore the first line
         this.functionClass.instruction = this.readInstruction(1, this.source).statement;
-        let final_result = JSON.stringify(this.functionClass, null, 2); // result is equivalent to python output
-                                                                  // but appears in different order slightly
-        return final_result;
+        return this.functionClass;
     }
   }

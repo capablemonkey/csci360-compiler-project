@@ -1,6 +1,64 @@
-function compile(sourceCode) {
-  analyzer = new SourceAnalyzer();
-  return analyzer.getAnalysis();
+function compile(parseTree) {
+  // sample function:
+  const sumFunction = new Function({
+    args: [
+      new Argument({variableName: "num", order: 0})
+    ],
+    statements: [
+      new Declaration({
+        destination: new Operand({type: "variable", value: "sum"}),
+        value: new Operand({type: "immediate", value: 0})
+      }),
+      new ForLoop({
+        declaration: new Declaration({
+          destination: new Operand({type: "variable", value: "i"}),
+          value: new Operand({type: "immediate", value: 0})
+        }),
+        condition: new BinaryExpression({
+          operator: "<",
+          operand1: new Operand({type: "variable", value: "i"}),
+          operand2: new Operand({type: "variable", value: "num"})
+        }),
+        update: new Assignment({
+          destination: new Operand({type: "variable", value: "i"}),
+          binaryExpression: new BinaryExpression({
+            operator: "+",
+            operand1: new Operand({type: "variable", value: "i"}),
+            operand2: new Operand({type: "immediate", value: "1"})
+          })
+        }),
+        statements: [
+          new Assignment({
+            destination: new Operand({type: "variable", value: "sum"}),
+            binaryExpression: new BinaryExpression({
+              operator: "+",
+              operand1: new Operand({type: "variable", value: "sum"}),
+              operand2: new Operand({type: "variable", value: "i"})
+            })
+          })
+        ],
+      }),
+      new Return({operand: new Operand({type: "variable", value: "sum"})})
+    ]
+  });
+
+  const symbolTable = {
+    "num": -4,
+    "sum": -8,
+    "i": -12
+  }
+
+  const assembly = sumFunction.toAssembly(symbolTable);
+  return assembly;
+}
+
+function parse(sourceCode) {
+  const sourceLines = sourceCode.
+    split("\n").
+    map(l => $.trim(l));
+  const analyzer = new SourceAnalyzer(sourceLines);
+  const parseTree = analyzer.getAnalysis();
+  return parseTree;
 }
 
 //Formats the data in an array of 1024 strings into an 8x128 table
@@ -33,8 +91,13 @@ function toBinary(sourceCode, fillTable){
 $(document).ready(function() {
   $('.button-compile').click(function(){
     const input = $('.editor-textbox').first().val();
-    const output = compile(input);
-    $('.output').first().text(output);
+    const parseTree = parse(input);
+
+    $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
+
+    const assembly = compile(parseTree);
+    $('#assembly').text(assembly.join("\n"));
+
     toBinary(input,fillTable);
   })
 })
