@@ -9,22 +9,66 @@ class Node {
   }
 }
 
-class Declaration extends Node {
-  constructor(variableName, value) {
+class Operand extends Node {
+  constructor({type, value}) {
+    super();
+    this.type = type;
+    this.value = value;
+  }
+
+  toAssembly(symbolTable) {
+    switch (this.type) {
+      case 'variable':
+        const address = symbolTable[this.value] * -1;
+        return `DWORD PTR [rbp - ${address}]`;
+      case 'register':
+        return this.value;
+      case 'immediate':
+        return this.value;
+      default:
+        throw `Invalid operand type: ${this.type}`;
+    }
+  }
+}
+
+class Argument extends Node {
+  constructor({variableName, order = 0}) {
     super();
     this.variableName = variableName;
+    this.order = order;
+  }
+
+  toAssembly(symbolTable) {
+    // These are the registers where arguments are stored when a function is called,
+    // in order that they are used; e.g. if there are 2 arguments, then edi and esi
+    // are used
+    const argumentRegisters = ["edi", "esi", "edx", "ecx"];
+    const d = new Declaration({
+      destination: new Operand({type: "variable", value: this.variableName}),
+      value: new Operand({type: "register", value: argumentRegisters[this.order]})
+    });
+    return d.toAssembly(symbolTable);
+  }
+}
+
+// takes a destination Operand and sets that equal to the value Operand
+class Declaration extends Node {
+  constructor({destination, value}) {
+    super();
+    this.destination = destination;
     this.value = value;
   }
 
   toAssembly(symbolTable) {
     // TODO: should be able to support expression
-    const address = symbolTable[this.variableName] * -1;
-    return `mov DWORD PTR [rbp - ${address}], ${this.value}`;
+    const dest = this.destination.toAssembly(symbolTable);
+    const val = this.value.toAssembly(symbolTable);
+    return `mov ${dest}, ${val}`;
   }
 }
 
 class BinaryExpression extends Node {
-  constructor(operator, operand1, operand2) {
+  constructor({operator, operand1, operand2}) {
     super();
     this.operator = operator;
     this.operand1 = operand1;
@@ -44,12 +88,8 @@ class BinaryExpression extends Node {
       throw `Operator ${this.operator} is not supported`
     }
 
-    // TODO: add private method to resolve operand and allow for immediate value
-    // TODO: reuse operand resolver for Declaration
-    const address1 = symbolTable[this.operand1] * -1;
-    const address2 = symbolTable[this.operand2] * -1;
-    const op1 = `DWORD PTR [rbp - ${address1}]`;
-    const op2 = `DWORD PTR [rbp - ${address2}]`;
+    const op1 = this.operand1.toAssembly(symbolTable);
+    const op2 = this.operand2.toAssembly(symbolTable);
 
     const instructions = [
       `mov eax, ${op1}`,
@@ -61,31 +101,25 @@ class BinaryExpression extends Node {
 }
 
 class Assignment extends Node {
-  // TODO: create an Expression which stores its result in eax
-  // TODO: Assignment should take what is in eax and then move that into the given variable name
-  constructor(variableName, binaryExpression) {
+  constructor({destination, binaryExpression}) {
     super();
-    this.variableName = variableName;
+    this.destination = destination;
     this.binaryExpression = binaryExpression;
   }
 
   toAssembly(symbolTable) {
-    // TODO: create a re-usable function that looks up address and generates DWORD PTR [rbp - addy]
-    let address = symbolTable[this.variableName] * -1
+    const destination = this.destination.toAssembly(symbolTable);
+
+    // binaryExpression stores result in eax; so move eax into destination variable
     let instructions = [
       this.binaryExpression.toAssembly(symbolTable),
-      `mov DWORD PTR [rbp - ${address}], eax`
+      `mov ${destination}, eax`
     ].flat();
     return instructions;
   }
 }
 
 class ForLoop extends Node {
-  // TODO: create label for instruction after end of for loop
-  // TODO: create label for checking condition
-  // TODO: check condition
-  // TODO: just for now: return label within instruction list
-
   /*
   for (int i = 0; i < num; i = i + 1) becomes...
 
@@ -105,7 +139,7 @@ class ForLoop extends Node {
     <statements after loop>
    */
 
-  constructor(declaration, condition, update, statements) {
+  constructor({declaration, condition, update, statements}) {
     super();
     this.declaration = declaration;
     this.condition = condition;
@@ -117,6 +151,7 @@ class ForLoop extends Node {
     // TODO: refactor me into reusable method:
     const childInstructions = this.statements.map(s => s.toAssembly(symbolTable)).flat();
 
+    // just for now: return label within instruction list
     let instructions = [
       this.declaration.toAssembly(symbolTable),
       ".LABEL_LOOP_1_CONDITION:",
@@ -133,21 +168,20 @@ class ForLoop extends Node {
 
 class Return extends Node {
   // can only return a variable at the moment; no expressions
-  constructor(variableName) {
+  constructor({operand}) {
     super();
-    this.variableName = variableName;
+    this.operand = operand;
   }
 
   toAssembly(symbolTable) {
-    const address = symbolTable[this.variableName] * -1;
-    return `mov eax, DWORD PTR [rbp - ${address}]`
+    const operand = this.operand.toAssembly(symbolTable);
+    return `mov eax, ${operand}`
   }
 }
 
 class Function extends Node {
-  // TOOD: use keyword arguments in all these constructors
-  constructor(args, statements) {
-    // args: Array<Declaration> ?? will they be initialized?
+  constructor({args, statements}) {
+    // args: Array<Argument>
     // statements: Array<Node>
     super();
     this.args = args;
@@ -177,52 +211,3 @@ class Function extends Node {
     return instructions;
   }
 }
-
-/*
-int someFunction() {
-  int result;
-  int foo = 5;
-  int bar = 10;
-  result = foo + bar;
-  return result;
-}
- */
-
-
-// const f = new Function([], [
-//   new Declaration("foo", 5),
-//   new Declaration("bar", 10),
-//   new Assignment("result", new BinaryExpression("+", "foo", "bar")),
-//   new Return("result")
-// ]);
-
-// const symbolTable = {
-//   "foo": -4,
-//   "bar": -8,
-//   "result": -12
-// }
-
-// f.toAssembly(symbolTable);
-
-
-const sumFunction = new Function(
-  [new Declaration("num", "edi")],
-  [
-    new Declaration("sum", 0),
-    new ForLoop(
-      new Declaration("i", 0),
-      new BinaryExpression("<", "i", "num"),
-      new Assignment("i", new BinaryExpression("+", "i", 1)),
-      [new Assignment("sum", new BinaryExpression("+", "sum", "i"))],
-    ),
-    new Return("sum")
-  ]
-)
-
-const symbolTable = {
-  "num": -4,
-  "sum": -8,
-  "i": -12
-}
-
-sumFunction.toAssembly(symbolTable);

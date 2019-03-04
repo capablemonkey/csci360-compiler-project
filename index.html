@@ -20,12 +20,12 @@
       <div class="editor col-sm">
         <h4>C++ source</h4>
         <textarea class="editor-textbox code-font">
-int main(int qux){
-  int result=0;
-  int foo=5;
-  int bar=10;
-  result=foo+bar;
-  return result;
+int sum(int num){
+  int sum=0;
+  for(int i=0;i<num;i=i+1){
+    sum=sum+i;
+  }
+  return sum;
 }
         </textarea>
         <button class="button-compile btn btn-lg btn-primary" type="">compile to x86</button>

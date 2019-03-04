@@ -1,18 +1,46 @@
 function compile(parseTree) {
   // sample function:
-  const sumFunction = new Function(
-    [new Declaration("num", "edi")],
-    [
-      new Declaration("sum", 0),
-      new ForLoop(
-        new Declaration("i", 0),
-        new BinaryExpression("<", "i", "num"),
-        new Assignment("i", new BinaryExpression("+", "i", 1)),
-        [new Assignment("sum", new BinaryExpression("+", "sum", "i"))],
-      ),
-      new Return("sum")
+  const sumFunction = new Function({
+    args: [
+      new Argument({variableName: "num", order: 0})
+    ],
+    statements: [
+      new Declaration({
+        destination: new Operand({type: "variable", value: "sum"}),
+        value: new Operand({type: "immediate", value: 0})
+      }),
+      new ForLoop({
+        declaration: new Declaration({
+          destination: new Operand({type: "variable", value: "i"}),
+          value: new Operand({type: "immediate", value: 0})
+        }),
+        condition: new BinaryExpression({
+          operator: "<",
+          operand1: new Operand({type: "variable", value: "i"}),
+          operand2: new Operand({type: "variable", value: "num"})
+        }),
+        update: new Assignment({
+          destination: new Operand({type: "variable", value: "i"}),
+          binaryExpression: new BinaryExpression({
+            operator: "+",
+            operand1: new Operand({type: "variable", value: "i"}),
+            operand2: new Operand({type: "immediate", value: "1"})
+          })
+        }),
+        statements: [
+          new Assignment({
+            destination: new Operand({type: "variable", value: "sum"}),
+            binaryExpression: new BinaryExpression({
+              operator: "+",
+              operand1: new Operand({type: "variable", value: "sum"}),
+              operand2: new Operand({type: "variable", value: "i"})
+            })
+          })
+        ],
+      }),
+      new Return({operand: new Operand({type: "variable", value: "sum"})})
     ]
-  )
+  });
 
   const symbolTable = {
     "num": -4,
