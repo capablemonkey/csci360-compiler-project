@@ -9,9 +9,19 @@
 
 .code-font {
   font-family: monospace;
+  white-space: pre;
 }
 
 .table-sm {
   font-family: monospace;
   font-weight: bold;
+}
+
+.section {
+  margin-top: 50px;
+}
+
+.output {
+  height: 400px;
+  overflow-y: scroll;
 }

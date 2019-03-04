@@ -1,6 +1,14 @@
-function compile(sourceCode) {
-  analyzer = new SourceAnalyzer();
-  return analyzer.getAnalysis();
+function compile(parseTree) {
+  return parseTree;
+}
+
+function parse(sourceCode) {
+  const sourceLines = sourceCode.
+    split("\n").
+    map(l => $.trim(l));
+  const analyzer = new SourceAnalyzer(sourceLines);
+  const parseTree = analyzer.getAnalysis();
+  return parseTree;
 }
 
 //Formats the data in an array of 1024 strings into an 8x128 table
@@ -33,8 +41,13 @@ function toBinary(sourceCode, fillTable){
 $(document).ready(function() {
   $('.button-compile').click(function(){
     const input = $('.editor-textbox').first().val();
-    const output = compile(input);
-    $('.output').first().text(output);
+    const parseTree = parse(input);
+
+    $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
+
+    const assembly = compile(parseTree);
+    $('#assembly').text(assembly);
+
     toBinary(input,fillTable);
   })
 })

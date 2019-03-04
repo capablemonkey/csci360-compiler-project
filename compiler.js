@@ -110,6 +110,8 @@ class Function extends Node {
       "mov rbp, rsp"
     ]
 
+    // TODO: handle arguments (load them from registers)
+
     // call each of the statements.toAssembly() and then append their instructions to instructions
     const bodyInstructions = this.statements.map(s => s.toAssembly(symbolTable)).flat()
     instructions = instructions.concat(bodyInstructions)
