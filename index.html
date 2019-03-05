@@ -5,37 +5,52 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.0/css/bootstrap.min.css" />
   <link rel="stylesheet" type="text/css" href="index.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script type="text/javascript" src="compiler.js"></script>
   <script type="text/javascript" src="SourceAnalyzer.js"></script>
   <script type="text/javascript" src="app.js"></script>
+  <script type="text/javascript" src="test.js"></script>
 </head>
 <body>
   <div class="container">
     <div class="py-5 text-center">
-      <h2>CSCI360 compiler project!!</h2>
+      <h2>CSCI360 compiler project</h2>
+      <a href="https://github.com/capablemonkey/csci360-compiler-project" target="_blank">github repo</a>
     </div>
 
     <div class="row">
       <div class="editor col-sm">
+        <h4>C++ source</h4>
         <textarea class="editor-textbox code-font">
-int main(){
-  int a [5] = { 16, 2, 77, 40, 12071 };
-  for(int i=0;i< 5;i++){
-    a[i] = 4;
+int sum(int num){
+  int sum=0;
+  for(int i=0;i<num;i=i+1){
+    sum=sum+i;
   }
+  return sum;
 }
         </textarea>
         <button class="button-compile btn btn-lg btn-primary" type="">compile to x86</button>
       </div>
+    </div>
+    <div class="row section">
+      <div class="col-sm">
+        <h4>Parse tree</h4>
 
-      <div class="output col-sm rounded bg-light code-font">
-        OUTPUT HERE
+        <div class="output rounded bg-light code-font" id="parse-tree">
+        </div>
+      </div>
+      <div class="col-sm">
+        <h4>x86 Assembly</h4>
+        <div class="output rounded bg-light code-font" id="assembly">
+        </div>
       </div>
     </div>
     <!--After the input and output boxes-->
-    <div>
-      <h3>External Storage - Source Code</h3>
-      <table id="external-source" class="table-sm">
-      </table>
+    <div class="section">
+      <h4>External Storage - Source Code</h4>
+      <div class="output rounded bg-light code-font">
+        <table id="external-source" class="table-sm"></table>
+      </div>
     </div>
   </div>
 </body>
