@@ -159,7 +159,8 @@ class ForLoop extends Node {
       "jge .LABEL_LOOP_1_END", // TODO: change based on condition
       childInstructions,
       this.update.toAssembly(symbolTable),
-      "jmp .LABEL_LOOP_1_CONDITION"
+      "jmp .LABEL_LOOP_1_CONDITION",
+      ".LABEL_LOOP_1_END:"
     ].flat();
 
     return instructions;
