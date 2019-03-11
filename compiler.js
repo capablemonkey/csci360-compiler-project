@@ -151,16 +151,29 @@ class ForLoop extends Node {
     // TODO: refactor me into reusable method:
     const childInstructions = this.statements.map(s => s.toAssembly(symbolTable)).flat();
 
+    // determine which jump operation to use after the comparison is done
+    const jumpOperations = {
+      "<": "jge",
+      ">": "jle",
+      "==": "jne",
+      "<=": "jg",
+      ">=": "jl"
+    };
+    const operator = jumpOperations[this.condition.operator];
+
+    // TODO: increment this loopId globally for each for loop (static variable on ForLoop?)
+    const loopId = 1;
+
     // just for now: return label within instruction list
     let instructions = [
       this.declaration.toAssembly(symbolTable),
-      ".LABEL_LOOP_1_CONDITION:",
+      `.LABEL_LOOP_${loopId}_CONDITION:`,
       this.condition.toAssembly(symbolTable),
-      "jge .LABEL_LOOP_1_END", // TODO: change based on condition
+      `${operator} .LABEL_LOOP_${loopId}_END`,
       childInstructions,
       this.update.toAssembly(symbolTable),
-      "jmp .LABEL_LOOP_1_CONDITION",
-      ".LABEL_LOOP_1_END:"
+      `jmp .LABEL_LOOP_${loopId}_CONDITION`,
+      `.LABEL_LOOP_${loopId}_END:`
     ].flat();
 
     return instructions;
