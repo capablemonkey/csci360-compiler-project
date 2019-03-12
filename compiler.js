@@ -180,6 +180,34 @@ class ForLoop extends Node {
   }
 }
 
+class If extends Node {
+  constructor({condition, statements}) {
+    super();
+    this.condition = condition;
+    console.log (this.condition);
+    this.statements = statements;
+  }
+  toAssembly(symbolTable) {
+    const childInstructions = this.statements.map(s => s.toAssembly(symbolTable)).flat();
+    const jumpOperations = {
+      "<": "jge",
+      ">": "jle",
+      "==": "jne",
+      "<=": "jg",
+      ">=": "jl"
+    };
+    const ifId = 1; // TODO: global if statement id labeler
+    const operator = jumpOperations[this.condition.operator];
+    let instructions = [
+      this.condition.toAssembly(symbolTable),
+      `${operator} .LABEL_IF_${ifId}_END`,
+      childInstructions,
+      `.LABEL_IF_${ifId}_END:`
+    ].flat();
+    return instructions;
+  }
+}
+
 class Return extends Node {
   // can only return a variable at the moment; no expressions
   constructor({operand}) {
