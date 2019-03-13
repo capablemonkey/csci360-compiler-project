@@ -50,7 +50,6 @@ class parser{
   // Reads the function head of a function
   readHead(source) {
     let words = [];
-    console.log(source);
     words[0] = source.shift(); //returnType
     words[1] = source.shift(); //functionName
     if(source.shift() === '('){//(
@@ -114,13 +113,13 @@ class parser{
       }
     }
     header.splice(0, semicolonIndex+1);
-    for(let i=0; i<header.length-1; i++)
+    for(let i=0; i<header.length; i++)
       inc.push(header[i]);
     let obj = {
       "codeType": "for",
-      "initialization": this.readDeclaration(header[0])
-      "termination": header[1]
-      "increment": this.readLogic(header[2])
+      "initialization": this.readDeclaration(init),
+      "termination": term,
+      "increment": this.readLogic(inc),
       "statement": []
     }
     obj.statement = this.readInstruction(content);
@@ -136,8 +135,8 @@ class parser{
             let declarationLine = [];
             let semicolonIndex;
             for(let i=0; i<source.length; i++){
-              if(element != ";")
-                declarationLine.push(element);
+              if(source[i] != ";")
+                declarationLine.push(source[i]);
               else{
                 semicolonIndex = i;
                 break;
@@ -163,7 +162,7 @@ class parser{
             if(source[0] === '{'){
               let curlyBraces = 0;
               let endBraceIndex;
-              for(let i=0; i<source.length; i++){
+              for(let i=1; i<source.length; i++){
                 if(source[i] === '{'){
                   curlyBraces++;
                 }
@@ -176,39 +175,44 @@ class parser{
                   }
                 }
               }
-              content = source.slice(0,endBraceIndex);
+              content = source.slice(1,endBraceIndex);
               source.splice(0,endBraceIndex+1);
             }
             //else syntaxError
             instruction.push(this.readForLoop(header,content));
             break;
           case 'return':
-            let returnStatement = '';
+            let returnStatement = [];
             for(let i=0; i<source.length; i++){
               if(source[i] != ';')
-                returnStatement += source[i] + ' ';
+                returnStatement.push(source[i]);
               else {
                 source.splice(0,i+1);
                 break;
               }
             }
-            return returnStatement;
+            if(returnStatement.length === 2){
+              instruction.push(`${returnStatement[0]} ${returnStatement[1]}`);
+            }
+            //else evaluate
+            //instruction.push(returnStatement);
             break;
 
-            default:
-              let statement = [];
-              for(let i=0; i<source.length; i++){
-                if(source[i] != ';')
-                  statement.push(source[i]);
-                else{
-                  source.splice(0,i+1);
-                  break;
-                }
+          default:
+            let statement = [];
+            for(let i=0; i<source.length; i++){
+              if(source[i] != ';')
+                statement.push(source[i]);
+              else{
+                source.splice(0,i+1);
+                break;
               }
-              instruction.push(this.readLogic(statement));
-              break;
-        }
+            }
+            instruction.push(this.readLogic(statement));
+            break;
+      }
     }
+    return instruction;
   }
 
   // Wrapper function called to generate analyzed code
@@ -237,13 +241,13 @@ class parser{
               break;
             }
           }
-
-        functionCode = this.source.slice(0,endBraceIndex);
-        this.source.splice(0,endBraceIndex+1);
+        }
+      functionCode = this.source.slice(0,endBraceIndex);
+      console.log(functionCode);
+      this.source.splice(0,endBraceIndex+1);
       }
       //else syntaxError
-        this.functionClass.instruction = this.readInstruction(functionCode).statement;
+        this.functionClass.instruction = this.readInstruction(functionCode);
         return this.functionClass;
-    }
   }
 }
