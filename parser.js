@@ -26,7 +26,7 @@ function tokenize(sourceCode){
         token = "";
       }
     }
-    else if(sourceCode[i] != ' ' && sourceCode[i] != '\n')
+    else if(sourceCode[i] != ' ' && sourceCode[i] != '\n' && sourceCode[i] != ',')
         //It's a symbol
         tokensArray.push(sourceCode[i]);
   }
@@ -37,6 +37,7 @@ class parser{
   constructor(sourceCode){
     this.declaration = 1;
     this.source = tokenize(sourceCode);
+    this.symbolTable = [];
     this.functionClass = {
         "returnType": "",
         "functionName": "",
@@ -44,36 +45,49 @@ class parser{
             "type": "",
             "name": ""
         },
+        "symbolTable":[],
         "instruction":[]
   }
 }
-  // Reads the function head of a function
-  readHead(source) {
-    let words = [];
-    words[0] = source.shift(); //returnType
-    words[1] = source.shift(); //functionName
-    if(source.shift() === '('){//(
-      words[2] = source.shift();//type
-      words[3] = source.shift();//name
-    }
-    if(source.shift() === ')') //)
-      return words;
-    //else syntaxError
-  }
-
-  readDeclaration(declarationLine){          //pass to declaration function
+  readDeclaration(declarationLine){
+    //int i = 0 || int i = x || int i[3] = {0,1,2}
     if(declarationLine[2] === '='){
-      this.declaration++;
-      let obj = {
-        "codeType": "declaration",
-        "dataType": declarationLine[0],
-        "dataName": declarationLine[1],
-        "dataValue": declarationLine[3],
-        "address": -(this.declaration*4)
-      };
+      if(typeof declarationLine[3] === 'number'){
+        this.declaration++;
+        this.functionClass.symbolTable[declarationLine[1]] = -(this.declaration*4);
+        let obj = new Declaration({
+          destination: new Operand({type: "variable", value: declarationLine[1]}),
+          value: new Operand({type: "immediate", value: declarationLine[3]})
+        });
+        return obj;
+      }
+      else{
+        this.declaration++;
+        this.functionClass.symbolTable[declarationLine[1]] = -(this.declaration*4);
+        let obj = new Declaration({
+          destination: new Operand({type: "variable", value: declarationLine[1]}),
+          value: new Operand({type: "variable", value: declarationLine[3]})
+        });
+        return obj;
+      }
+    }
+    else if(declarationLine[2] === '['){
+      let arrayValues = declarationLine.slice(7,declarationLine.length-1);
+      while(arrayValues.length < Number(declarationLine[3])){
+        arrayValues.push('0');
+      }
+      for(let i=0; i<arrayValues.length; i++){
+        this.declaration++;
+        let symbolName = `${declarationLine[1]}[${i}]`;;
+        this.functionClass.symbolTable[symbolName] = -(this.declaration*4);
+      }
+      const obj = new ArrayDeclaration({
+        destination: declarationLine[1],
+        values: arrayValues
+      });
+      obj.toAssembly(this.functionClass.symbolTable);
       return obj;
     }
-    //else syntaxError
   }
 
   readLogic(logicLine){
@@ -217,15 +231,19 @@ class parser{
 
   // Wrapper function called to generate analyzed code
   getAnalysis () {
-      let head = this.readHead(this.source);
-      this.functionClass.returnType = head[0];
-      this.functionClass.functionName = head[1];
-      this.functionClass.parameter = {
-          "type": head[2],
-          "name": head[3],
+      this.functionClass.returnType = this.source[0];
+      this.functionClass.functionName = this.source[1];
+      if(this.source[2] === '('){
+        this.functionClass.parameter = {
+          "type": this.source[3],
+          "name": this.source[4],
           "codeType": "declaration",
           "address": -(this.declaration*4)
-      };
+        };
+        this.functionClass.symbolTable[this.functionClass.parameter.name]
+        = this.functionClass.parameter.address;
+        this.source.splice(0,6);
+      }
       let functionCode;
       if(this.source.shift() === '{'){
         let openBraces = 0;
@@ -243,11 +261,11 @@ class parser{
           }
         }
       functionCode = this.source.slice(0,endBraceIndex);
-      console.log(functionCode);
       this.source.splice(0,endBraceIndex+1);
       }
       //else syntaxError
-        this.functionClass.instruction = this.readInstruction(functionCode);
-        return this.functionClass;
+      console.log(this.functionClass.symbolTable);
+      this.functionClass.instruction = this.readInstruction(functionCode);
+      return this.functionClass;
   }
 }
