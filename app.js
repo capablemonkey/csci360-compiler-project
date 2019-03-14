@@ -53,10 +53,7 @@ function compile(parseTree) {
 }
 
 function parse(sourceCode) {
-  const sourceLines = sourceCode.
-    split("\n").
-    map(l => $.trim(l));
-  const analyzer = new SourceAnalyzer(sourceLines);
+  const analyzer = new parser(sourceCode);
   const parseTree = analyzer.getAnalysis();
   return parseTree;
 }
