@@ -91,14 +91,15 @@ class parser{
   }
 
   readLogic(logicLine){
-    if(logicLine[1] === '=' && '+-*/'.includes(logicLine[3])){
-      let obj = {
-        "codeType": "logicOperation",
-        "destination": logicLine[0],
-        "operand1": logicLine[2],
-        "operator": logicLine[3],
-        "operand2": logicLine[4]
-      };
+    if(logicLine[1] === '=' && '+-><'.includes(logicLine[3])){
+      let obj = new Assignment({
+        destination: declarationLine[0],
+        binaryExpression: new BinaryExpression({
+          operator: logicLine[3],
+          operand1: logicLine[2],
+          operand2: logicLine[4],
+        }),
+      });
       return obj;
     }
     //else syntaxError
@@ -196,20 +197,10 @@ class parser{
             instruction.push(this.readForLoop(header,content));
             break;
           case 'return':
-            let returnStatement = [];
-            for(let i=0; i<source.length; i++){
-              if(source[i] != ';')
-                returnStatement.push(source[i]);
-              else {
-                source.splice(0,i+1);
-                break;
-              }
-            }
-            if(returnStatement.length === 2){
-              instruction.push(`${returnStatement[0]} ${returnStatement[1]}`);
-            }
-            //else evaluate
-            //instruction.push(returnStatement);
+            instruction.push(
+              new Return(this.source[1])
+            );
+            source.splice.(0,2);
             break;
 
           default:
