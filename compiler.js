@@ -111,8 +111,8 @@ class BinaryExpression extends Node {
     const op2 = this.operand2.toAssembly(symbolTable);
 
     const instructions = [
-      `mov eax, ${op1}`,
-      `${operatorToInstruction[this.operator]} eax, ${op2}`
+      `mov eax, ${op1} \n`,
+      `${operatorToInstruction[this.operator]} eax, ${op2} \n`
     ];
 
     return instructions;
@@ -120,21 +120,34 @@ class BinaryExpression extends Node {
 }
 
 class Assignment extends Node {
-  constructor({destination, binaryExpression}) {
+  constructor({destination, operand}) {
     super();
     this.destination = destination;
-    this.binaryExpression = binaryExpression;
+    this.operand = operand;
   }
 
   toAssembly(symbolTable) {
     const destination = this.destination.toAssembly(symbolTable);
-
-    // binaryExpression stores result in eax; so move eax into destination variable
-    let instructions = [
-      this.binaryExpression.toAssembly(symbolTable),
-      `mov ${destination}, eax`
-    ].flat();
-    return instructions;
+    if(this.operand instanceof BinaryExpression){
+      // binaryExpression stores result in eax; so move eax into destination variable
+      let instructions = [
+        this.operand.toAssembly(symbolTable),
+        `mov ${destination}, eax \n`
+      ].flat();
+      return instructions;
+    }
+    else if(this.operand instanceof Operand){
+      if(operand.type === 'variable'){
+        let instructions = [
+          `mov eax, ${operand.toAssembly()} \n`,
+          `mov ${destination}, eax \n`
+        ];
+        return instructions;
+      }
+      else if(operand.type === 'immediate'){
+        return `mov ${destination}, ${operand}`;
+      }
+    }
   }
 }
 
@@ -203,7 +216,6 @@ class If extends Node {
   constructor({condition, statements}) {
     super();
     this.condition = condition;
-    console.log (this.condition);
     this.statements = statements;
   }
   toAssembly(symbolTable) {
