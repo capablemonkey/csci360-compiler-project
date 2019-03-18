@@ -2,7 +2,7 @@ function compile(parseTree) {
   // sample function:
   const sumFunction = new Function({
     args: [
-      new Argument({variableName: "num", order: 0})
+      new Argument({variableName: "num", order: 0, type: "int"})
     ],
     statements: [
       new Declaration({

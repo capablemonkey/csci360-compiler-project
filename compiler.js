@@ -33,6 +33,39 @@ class Operand extends Node {
   }
 }
 
+class CallerArgument extends Node {
+  constructor({value, type, order, dataType}) {
+    /* value: the value of the argument
+       type: variable || immediate || address
+       order: number the parameter number this argument is for the function
+       dataType: the dataType of the argument: int, int*, float etc 
+       dataType is not used here but it helps to have for FunctionCall class
+    */ 
+    super();
+    this.value = value;
+    this.type = type;
+    this.order = order;
+    this.dataType = dataType
+  }
+
+  toAssembly(symbolTable) {
+    const argumentRegisters = ["edi", "esi", "edx", "ecx"];
+    const argumentRegister = argumentRegisters[this.order];
+    let address;
+    switch (this.type) {
+      case 'variable':
+        address = symbolTable[this.value] * -1;
+        return [`mov eax, DWORD PTR [rbp - ${address}]`, `mov ${argumentRegister}, eax`];
+      case 'immediate': 
+        return `mov ${argumentRegister} ${this.value}`;
+      case 'address': // handles references & pointers
+        address = symbolTable[this.value] * -1;  
+        return [`lea rax, [rbp - ${address}]`, `mov ${argumentRegister}, rax`];
+      default:
+        throw `Invalid argument type: ${this.type}`;
+    }
+}
+  
 class ArrayElement extends Node {
   constructor({name, index}) {
     super();
@@ -124,7 +157,6 @@ class Assignment extends Node {
 
   toAssembly(symbolTable) {
     const destination = this.destination.toAssembly(symbolTable);
-
     // binaryExpression stores result in eax; so move eax into destination variable
     let instructions = [
       this.binaryExpression.toAssembly(symbolTable),
@@ -232,6 +264,28 @@ class Return extends Node {
   toAssembly(symbolTable) {
     const operand = this.operand.toAssembly(symbolTable);
     return `mov eax, ${operand}`
+  }
+}
+
+class FunctionCall extends Node {
+  constructor({functionName, args}) {
+    // functionName: name of the function being called
+    // args: Array<CallerArgument> // operand b/c can be variable, address, or immediate
+    super();
+    this.functionName = functionName;
+    this.args = args; 
+    this.order = 0; // the argumentRegister index we are using
+  }
+  toAssembly(symbolTable) {
+    // load arguments from memory or immediate to registers
+    const argumentInstructions = this.args.map(a => a.toAssembly(symbolTable)).flat();
+    const argumentDataTypes = this.args.map(a => a.dataType);
+    const types = argumentDataTypes.join(",");
+    const instructions = [
+      argumentInstructions,
+      `call ${this.functionName}(${types})`
+    ].flat();
+    return instructions;
   }
 }
 
