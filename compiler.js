@@ -74,15 +74,15 @@ class ArrayDeclaration extends Node {
     this.values = values;
   }
   toAssembly(symbolTable){
-    let arrayDeclarations = "";
+    let arrayDeclarations = [];
     for(let i=0; i<this.values.length; i++){
       const dec = new Declaration({
         destination: new Operand({type: "variable", value: `${this.destination}[${i}]`}),
         value: new Operand({type: "immediate", value: this.values[i]})
       });
-      arrayDeclarations += dec.toAssembly(symbolTable) + '\n';
+      arrayDeclarations.push(dec.toAssembly(symbolTable));
     }
-    return arrayDeclarations;
+    return arrayDeclarations.join('\n');
   }
 }
 
@@ -111,8 +111,8 @@ class BinaryExpression extends Node {
     const op2 = this.operand2.toAssembly(symbolTable);
 
     const instructions = [
-      `mov eax, ${op1} \n`,
-      `${operatorToInstruction[this.operator]} eax, ${op2} \n`
+      `mov eax, ${op1}`,
+      `${operatorToInstruction[this.operator]} eax, ${op2}`
     ];
 
     return instructions;
@@ -132,20 +132,20 @@ class Assignment extends Node {
       // binaryExpression stores result in eax; so move eax into destination variable
       let instructions = [
         this.operand.toAssembly(symbolTable),
-        `mov ${destination}, eax \n`
+        `mov ${destination}, eax`
       ].flat();
       return instructions;
     }
     else if(this.operand instanceof Operand){
       if(operand.type === 'variable'){
         let instructions = [
-          `mov eax, ${operand.toAssembly()} \n`,
-          `mov ${destination}, eax \n`
+          `mov eax, ${operand.toAssembly(symbolTable)}`,
+          `mov ${destination}, eax`
         ];
         return instructions;
       }
       else if(operand.type === 'immediate'){
-        return `mov ${destination}, ${operand}`;
+        return `mov ${destination}, ${operand.toAssembly(symbolTable)}`;
       }
     }
   }
@@ -253,10 +253,11 @@ class Return extends Node {
 }
 
 class Function extends Node {
-  constructor({args, statements}) {
+  constructor({name, args, statements}) {
     // args: Array<Argument>
     // statements: Array<Node>
     super();
+    this.name = name;
     this.args = args;
     this.statements = statements;
   }
@@ -280,7 +281,7 @@ class Function extends Node {
     instructions = instructions.concat(childInstructions);
 
     instructions.push("pop rbp");
-    instructions.push("ret");
+    instructions.push("ret \n");
     return instructions;
   }
 }

@@ -40,25 +40,19 @@ function tokenize(sourceCode){
 
 class parser{
   constructor(sourceCode){
-    this.declaration = 1;
+    this.declarations = 0;
     this.source = sourceCode;
     this.symbolTable = [];
-    this.functionClass = {
-        "returnType": "",
-        "functionName": "",
-        "parameter": {
-            "type": "",
-            "name": ""
-        },
-        "instruction":[]
+    this.functions = [];
+    this.tables = [];
   }
-}
+
   makeDeclaration(declarationLine){
     //int i = 0
     if(declarationLine[2] === '='){
       if(Number(declarationLine[3]) != Number.NaN){
-        this.declaration++;
-        this.symbolTable[declarationLine[1]] = -(this.declaration*4);
+        this.declarations++;
+        this.symbolTable[declarationLine[1]] = -(this.declarations*4);
         const obj = new Declaration({
           destination: new Operand({type: "variable", value: declarationLine[1]}),
           value: new Operand({type: "immediate", value: declarationLine[3]})
@@ -67,8 +61,8 @@ class parser{
       }
       //int i = x
       else{
-        this.declaration++;
-        this.symbolTable[declarationLine[1]] = -(this.declaration*4);
+        this.declarations++;
+        this.symbolTable[declarationLine[1]] = -(this.declarations*4);
         const obj = new Declaration({
           destination: new Operand({type: "variable", value: declarationLine[1]}),
           value: new Operand({type: "variable", value: declarationLine[3]})
@@ -82,10 +76,10 @@ class parser{
       while(arrayValues.length < Number(declarationLine[3])){
         arrayValues.push('0');
       }
+      this.declarations += Number(declarationLine[3]);
       for(let i=0; i<arrayValues.length; i++){
-        this.declaration++;
         let symbolName = `${declarationLine[1]}[${i}]`;;
-        this.symbolTable[symbolName] = -(this.declaration*4);
+        this.symbolTable[symbolName] = -((this.declarations-i)*4);
       }
       const obj = new ArrayDeclaration({
         destination: declarationLine[1],
@@ -101,17 +95,15 @@ class parser{
     if(assignmentLine[1] === '='){
       if(assignmentLine.length === 3){
         let opType;
-        if(Number(source[2]) === Number.NaN)
+        if(Number(assignmentLine[2]) === Number.NaN)
           opType = 'variable';
         else
           opType = 'immediate';
-        if(assignmentLine[1] === '='){
-          const obj = new Assignment({
-            desination: new Operand({type: "variable", value: assignmentLine[0]}),
-            operand: new Operand({type: opType, value: assignmentLine[3]})
-          });
-          return obj;
-        }
+        const obj = new Assignment({
+          desination: new Operand({type: "variable", value: assignmentLine[0]}),
+          operand: new Operand({type: opType, value: assignmentLine[2]})
+        });
+        return obj;
       }
       //i = a + b || i = a + 1
       if('+-'.includes(assignmentLine[3])){
@@ -137,15 +129,16 @@ class parser{
       }
     }
     //i++ || i--
-    else if(assignmentLine[1] == assignmentLine[2]){
+    else if(assignmentLine[1] === assignmentLine[2]){
       const obj = new Assignment({
-        destination: assignmentLine[0],
+        destination: new Operand({type: 'variable', value: assignmentLine[0]}),
         operand: new BinaryExpression({
           operator: assignmentLine[1],
           operand1: new Operand({type: 'variable', value: assignmentLine[0]}),
           operand2: new Operand({type: 'immediate', value: 1}),
         }),
       })
+      return obj;
     }
     //else syntaxError
   }
@@ -164,10 +157,10 @@ class parser{
     const obj = new If({
       condition: new BinaryExpression({
         operator: condition[1],
-        operand1: new Operand({type: opType1, value: condition[0]}),
-        operand2: new Operand({type: opType2, value: condition[2]})
+        operand1: new Operand({type: op1Type, value: condition[0]}),
+        operand2: new Operand({type: op2Type, value: condition[2]})
       }),
-      statements: this.readInstruction(statements)
+      statements: this.readStatements(statements)
     });
     return obj;
   }
@@ -208,12 +201,12 @@ class parser{
         operand2: new Operand({type: opType, value: term[2]})
       }),
       update: this.makeAssignment(inc),
-      statements: this.readInstruction(statements)
+      statements: this.readStatements(statements)
     });
     return obj;
   }
 
-  readInstruction (source) {
+  readStatements(source){
     let instruction = [];
     while (source.length > 0) {
       let keyword = source[0];
@@ -335,25 +328,35 @@ class parser{
     return instruction;
   }
 
-  // Wrapper function called to generate analyzed code
-  getAnalysis () {
-      this.functionClass.returnType = this.source[0];
-      this.functionClass.functionName = this.source[1];
+  makeFunction(){
+    while(this.source.length > 0){
+      //int funcName(int x, int a[5], int y, int z)
+      const funcName = this.source[1];
+      let funcArgs = [];
+      let funcStatements = [];
       if(this.source[2] === '('){
-        this.functionClass.parameter = {
-          "type": this.source[3],
-          "name": this.source[4],
-          "codeType": "declaration",
-          "address": -(this.declaration*4)
-        };
-        this.symbolTable[this.functionClass.parameter.name]
-        = this.functionClass.parameter.address;
-        this.source.splice(0,6);
+        let currentOrder = 0;
+        for(let i=3; i<this.source.length; i+=2){
+          if(this.source[i] != ')'){
+            this.declarations++;
+            this.symbolTable[this.source[i+1]] = -(this.declarations*4);
+            funcArgs.push(new Argument({
+              variableName: this.source[i+1],
+              order: currentOrder
+            }));
+            currentOrder++;
+            if(this.source[i+2] === '[')
+              i+=3;
+          }
+          else{
+            this.source.splice(0,i+1);
+            break;
+          }
+        }
       }
       let functionCode;
       if(this.source.shift() === '{'){
         let openBraces = 0;
-        let endBraceIndex;
         for(let i=0; i < this.source.length; i++){
           if(this.source[i] === '{')
             openBraces++;
@@ -361,18 +364,24 @@ class parser{
             if(openBraces > 0)
               openBraces--;
             else{
-              endBraceIndex = i;
+              functionCode = this.source.slice(0,i);
+              this.source.splice(0,i+1);
               break;
             }
           }
         }
-      functionCode = this.source.slice(0,endBraceIndex);
-      this.source.splice(0,endBraceIndex+1);
       }
       //else syntaxError;
-      console.log(functionCode);
-      this.functionClass.instruction = this.readInstruction(functionCode);
-      console.log(this.symbolTable);
-      return this;
+      funcStatements = this.readStatements(functionCode);
+      this.functions.push(new Function({
+        name: funcName,
+        args: funcArgs,
+        statements: funcStatements
+      }));
+      this.tables.push(this.symbolTable);
+      this.symbolTable = [];
+      this.declarations = 0;
+    }
+    return this;
   }
 }

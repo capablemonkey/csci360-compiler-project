@@ -1,6 +1,7 @@
 function compile(parseTree) {
   // sample function:
   const sumFunction = new Function({
+    name: 'sum',
     args: [
       new Argument({variableName: "num", order: 0})
     ],
@@ -54,7 +55,7 @@ function compile(parseTree) {
 
 function parse(sourceCode) {
   const analyzer = new parser(sourceCode);
-  const parseTree = analyzer.getAnalysis();
+  const parseTree = analyzer.makeFunction();
   return parseTree;
 }
 
@@ -99,15 +100,15 @@ $(document).ready(function() {
 
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
 
-    const mainFunc = parseTree.functionClass.instruction;
-    const mainSymbolTable = parseTree.symbolTable;
-    let assembly = '';
-    for(let i=0; i<mainFunc.length; i++){
-      assembly += (mainFunc[i].toAssembly(mainSymbolTable) + '\n');
+    const functions = parseTree.functions;
+    const tables = parseTree.tables;
+    let assembly = [];
+    for(let i=0; i<parseTree.functions.length; i++){
+      assembly.push(parseTree.functions[i].toAssembly(parseTree.tables[i]));
     }
-    $('#assembly').text(assembly);
+    $('#assembly').text(assembly.flat().join('\n'));
 
-    console.log(mainFunc, mainSymbolTable);
+    console.log(functions, tables);
     toBinary(tokenInput,fillTable);
   })
 })
