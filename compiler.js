@@ -32,11 +32,18 @@ class Operand extends Node {
 }
 
 class CallerArgument extends Node {
-  constructor({value, type, order}) {
+  constructor({value, type, order, dataType}) {
+    /* value: the value of the argument
+       type: variable || immediate || address
+       order: number the parameter number this argument is for the function
+       dataType: the dataType of the argument: int, int*, float etc 
+       dataType is not used here but it helps to have for FunctionCall class
+    */ 
     super();
     this.value = value;
     this.type = type;
     this.order = order;
+    this.dataType = dataType
   }
 
   toAssembly(symbolTable) {
@@ -258,9 +265,11 @@ class FunctionCall extends Node {
   toAssembly(symbolTable) {
     // load arguments from memory or immediate to registers
     const argumentInstructions = this.args.map(a => a.toAssembly(symbolTable)).flat();
+    const argumentDataTypes = this.args.map(a => a.dataType);
+    const types = argumentDataTypes.join(",");
     const instructions = [
       argumentInstructions,
-      `call ${this.functionName}(int*)`
+      `call ${this.functionName}(${types})`
     ].flat();
     return instructions;
   }
