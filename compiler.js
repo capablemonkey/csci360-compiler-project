@@ -211,7 +211,6 @@ class If extends Node {
   constructor({condition, statements}) {
     super();
     this.condition = condition;
-    console.log (this.condition);
     this.statements = statements;
   }
   toAssembly(symbolTable) {
