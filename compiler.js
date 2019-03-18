@@ -32,9 +32,9 @@ class Operand extends Node {
 }
 
 class CallerArgument extends Node {
-  constructor({variable, type, order}) {
+  constructor({value, type, order}) {
     super();
-    this.variable = variable;
+    this.value = value;
     this.type = type;
     this.order = order;
   }
@@ -45,12 +45,12 @@ class CallerArgument extends Node {
     let address;
     switch (this.type) {
       case 'variable':
-        address = symbolTable[this.variable] * -1;
+        address = symbolTable[this.value] * -1;
         return [`mov eax, DWORD PTR [rbp - ${address}]`, `mov ${argumentRegister}, eax`];
       case 'immediate': 
-        return `mov ${argumentRegister} ${this.variable}`;
+        return `mov ${argumentRegister} ${this.value}`;
       case 'address': // handles references & pointers
-        address = symbolTable[this.variable] * -1;  
+        address = symbolTable[this.value] * -1;  
         return [`lea rax, [rbp - ${address}]`, `mov ${argumentRegister}, rax`];
       default:
         throw `Invalid argument type: ${this.type}`;
@@ -136,7 +136,6 @@ class Assignment extends Node {
 
   toAssembly(symbolTable) {
     const destination = this.destination.toAssembly(symbolTable);
-
     // binaryExpression stores result in eax; so move eax into destination variable
     let instructions = [
       this.binaryExpression.toAssembly(symbolTable),
@@ -261,7 +260,7 @@ class FunctionCall extends Node {
     const argumentInstructions = this.args.map(a => a.toAssembly(symbolTable)).flat();
     const instructions = [
       argumentInstructions,
-      `call ${this.functionName}(int)`
+      `call ${this.functionName}(int*)`
     ].flat();
     return instructions;
   }
