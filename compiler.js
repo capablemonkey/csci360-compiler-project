@@ -165,12 +165,13 @@ class ForLoop extends Node {
     <statements after loop>
    */
 
-  constructor({declaration, condition, update, statements}) {
+  constructor({declaration, condition, update, statements, id}) {
     super();
     this.declaration = declaration;
     this.condition = condition;
     this.update = update;
     this.statements = statements;
+    this.id = id;
   }
 
   toAssembly(symbolTable) {
@@ -186,9 +187,7 @@ class ForLoop extends Node {
       ">=": "jl"
     };
     const operator = jumpOperations[this.condition.operator];
-
-    // TODO: increment this loopId globally for each for loop (static variable on ForLoop?)
-    const loopId = 1;
+    const loopId = this.id;
 
     // just for now: return label within instruction list
     let instructions = [
@@ -207,10 +206,11 @@ class ForLoop extends Node {
 }
 
 class If extends Node {
-  constructor({condition, statements}) {
+  constructor({condition, statements, id}) {
     super();
     this.condition = condition;
     this.statements = statements;
+    this.id = id;
   }
   toAssembly(symbolTable) {
     const childInstructions = this.statements.map(s => s.toAssembly(symbolTable)).flat();
@@ -221,7 +221,7 @@ class If extends Node {
       "<=": "jg",
       ">=": "jl"
     };
-    const ifId = 1; // TODO: global if statement id labeler
+    const ifId = this.id;
     const operator = jumpOperations[this.condition.operator];
     let instructions = [
       this.condition.toAssembly(symbolTable),
