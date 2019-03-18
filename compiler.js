@@ -1,3 +1,5 @@
+const INT_SIZE = 4;
+
 // a node in the parse tree
 class Node {
   constructor() {
@@ -62,6 +64,18 @@ class CallerArgument extends Node {
       default:
         throw `Invalid argument type: ${this.type}`;
     }
+}
+  
+class ArrayElement extends Node {
+  constructor({name, index}) {
+    super();
+    this.name = name;
+    this.index = index;
+  }
+
+  toAssembly(symbolTable) {
+    const address = (symbolTable[this.name] + this.index * INT_SIZE) * -1;
+    return `DWORD PTR [rbp - ${address}]`;
   }
 }
 
@@ -304,6 +318,30 @@ class Function extends Node {
 
     instructions.push("pop rbp");
     instructions.push("ret");
+    return instructions;
+  }
+}
+
+// Only supports array of integers
+// int a[3] = {1, 2, 3};
+// mov dword ptr [rbp - 12], 1
+// mov dword ptr [rbp - 8], 2
+// mov dword ptr [rbp - 4], 3
+class ArrayDeclaration extends Node {
+  constructor({destination, size, values}) {
+    super();
+    this.destination = destination;
+    this.size = size;
+    this.values = values;
+  }
+
+  toAssembly(symbolTable) {
+    const baseAddress = symbolTable[this.destination];
+    let instructions = this.values.map((value, index) => {
+       const address = (baseAddress + index * INT_SIZE) * -1;
+       const element = new ArrayElement({name: this.destination, "index": index}).toAssembly(symbolTable);
+       return `mov ${element}, ${value}`
+    });
     return instructions;
   }
 }

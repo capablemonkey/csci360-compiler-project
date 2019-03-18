@@ -42,21 +42,44 @@ function compile(parseTree) {
     ]
   });
 
-  const symbolTable = {
+  const mainFunction = new Function({
+    args: [],
+    statements: [
+      new ArrayDeclaration({
+        destination: "a",
+        size: 3,
+        values: [1, 2, 3]
+      }),
+      new Assignment({
+        destination: new ArrayElement({name: "a", index: 1}),
+        binaryExpression: new BinaryExpression({
+          operator: "+",
+          operand1: new Operand({type: "immediate", value: "1"}),
+          operand2: new Operand({type: "immediate", value: "2"})
+        })
+      })
+    ]
+  });
+
+  const symbolTableSum = {
     "num": -4,
     "sum": -8,
     "i": -12
   }
 
-  const assembly = sumFunction.toAssembly(symbolTable);
+  const symbolTableMain = {
+    "a": -12
+  }
+
+  const assembly = [
+    sumFunction.toAssembly(symbolTableSum),
+    mainFunction.toAssembly(symbolTableMain)
+  ].flat();
   return assembly;
 }
 
 function parse(sourceCode) {
-  const sourceLines = sourceCode.
-    split("\n").
-    map(l => $.trim(l));
-  const analyzer = new SourceAnalyzer(sourceLines);
+  const analyzer = new parser(sourceCode);
   const parseTree = analyzer.getAnalysis();
   return parseTree;
 }
