@@ -2,12 +2,18 @@ function compile(parseTree) {
   // sample function:
   const sumFunction = new Function({
     args: [
-      new Argument({variableName: "num", order: 0})
+      new Argument({variableName: "num", order: 0, type: "int"})
     ],
     statements: [
       new Declaration({
         destination: new Operand({type: "variable", value: "sum"}),
         value: new Operand({type: "immediate", value: 0})
+      }),
+      new FunctionCall({
+        functionName: "test",
+        args: [
+          new CallerArgument({ variable: "sum", type: "address", order: 0 })
+        ]
       }),
       new ForLoop({
         declaration: new Declaration({

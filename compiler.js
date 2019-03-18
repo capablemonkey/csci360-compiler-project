@@ -31,6 +31,33 @@ class Operand extends Node {
   }
 }
 
+class CallerArgument extends Node {
+  constructor({variable, type, order}) {
+    super();
+    this.variable = variable;
+    this.type = type;
+    this.order = order;
+  }
+
+  toAssembly(symbolTable) {
+    const argumentRegisters = ["edi", "esi", "edx", "ecx"];
+    const argumentRegister = argumentRegisters[this.order];
+    let address;
+    switch (this.type) {
+      case 'variable':
+        address = symbolTable[this.variable] * -1;
+        return [`mov eax, DWORD PTR [rbp - ${address}]`, `mov ${argumentRegister}, eax`];
+      case 'immediate': 
+        return `mov ${argumentRegister} ${this.variable}`;
+      case 'address': // handles references & pointers
+        address = symbolTable[this.variable] * -1;  
+        return [`lea rax, [rbp - ${address}]`, `mov ${argumentRegister}, rax`];
+      default:
+        throw `Invalid argument type: ${this.type}`;
+    }
+  }
+}
+
 class Argument extends Node {
   constructor({variableName, order = 0}) {
     super();
@@ -218,6 +245,26 @@ class Return extends Node {
   toAssembly(symbolTable) {
     const operand = this.operand.toAssembly(symbolTable);
     return `mov eax, ${operand}`
+  }
+}
+
+class FunctionCall extends Node {
+  constructor({functionName, args}) {
+    // functionName: name of the function being called
+    // args: Array<CallerArgument> // operand b/c can be variable, address, or immediate
+    super();
+    this.functionName = functionName;
+    this.args = args; 
+    this.order = 0; // the argumentRegister index we are using
+  }
+  toAssembly(symbolTable) {
+    // load arguments from memory or immediate to registers
+    const argumentInstructions = this.args.map(a => a.toAssembly(symbolTable)).flat();
+    const instructions = [
+      argumentInstructions,
+      `call ${this.functionName}(int)`
+    ].flat();
+    return instructions;
   }
 }
 
