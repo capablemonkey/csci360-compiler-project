@@ -1,5 +1,7 @@
 function compile(parseTree) {
   // sample function:
+  let loopId = 1; // id variables initialized outside all functions 
+  let ifId = 1; // value incremented with each new function
   const sumFunction = new Function({
     args: [
       new Argument({variableName: "num", order: 0, type: "int"})
@@ -10,6 +12,7 @@ function compile(parseTree) {
         value: new Operand({type: "immediate", value: 0})
       }),
       new ForLoop({
+        id: loopId++,
         declaration: new Declaration({
           destination: new Operand({type: "variable", value: "i"}),
           value: new Operand({type: "immediate", value: 0})
