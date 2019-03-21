@@ -83,8 +83,8 @@ function compile(parseTree) {
 }
 
 function parse(sourceCode) {
-  const analyzer = new parser(sourceCode);
-  const parseTree = analyzer.makeFunction();
+  const parser = new Parser(sourceCode);
+  const parseTree = parser.makeFunction();
   return parseTree;
 }
 
@@ -124,20 +124,19 @@ function toBinary(sourceCode, fillTable){
 $(document).ready(function() {
   $('.button-compile').click(function(){
     const input = $('.editor-textbox').first().val();
-    const tokenInput = tokenize(input);
-    const parseTree = parse(tokenInput);
+    const tokens = tokenize(input);
+    const parseTree = parse(tokens);
 
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
 
     const functions = parseTree.functions;
     const tables = parseTree.tables;
-    let assembly = [];
-    for(let i=0; i<parseTree.functions.length; i++){
-      assembly.push(parseTree.functions[i].toAssembly(parseTree.tables[i]));
-    }
-    $('#assembly').text(assembly.flat().join('\n'));
 
-    console.log(functions, tables);
-    toBinary(tokenInput,fillTable);
+    const assembly = functions.
+      map((f, idx) => f.toAssembly(tables[idx])).
+      flat();
+
+    $('#assembly').text(assembly.join('\n'));
+    toBinary(tokens, fillTable);
   })
 })

@@ -38,7 +38,21 @@ function tokenize(sourceCode){
   return tokensArray;
 }
 
-class parser{
+function isNumber(string) {
+  if (string.length == 0) { return false; }
+  const nan = isNaN(Number(string))
+  return !nan;
+}
+
+function parseOperand(string) {
+  if (isNumber(string)) {
+    return new Operand({type: "immediate", value: Number(string)});
+  }
+
+  return new Operand({type: "variable", value: string});
+}
+
+class Parser{
   constructor(sourceCode){
     this.declarations = 0;
     this.source = sourceCode;
@@ -53,21 +67,19 @@ class parser{
       if(Number(declarationLine[3]) != Number.NaN){
         this.declarations++;
         this.symbolTable[declarationLine[1]] = -(this.declarations*4);
-        const obj = new Declaration({
+        return new Declaration({
           destination: new Operand({type: "variable", value: declarationLine[1]}),
           value: new Operand({type: "immediate", value: declarationLine[3]})
         });
-        return obj;
       }
       //int i = x
       else{
         this.declarations++;
         this.symbolTable[declarationLine[1]] = -(this.declarations*4);
-        const obj = new Declaration({
+        return new Declaration({
           destination: new Operand({type: "variable", value: declarationLine[1]}),
           value: new Operand({type: "variable", value: declarationLine[3]})
         });
-        return obj;
       }
     }
     //int i[3] = {0,1,2}
@@ -81,12 +93,11 @@ class parser{
         let symbolName = `${declarationLine[1]}[${i}]`;;
         this.symbolTable[symbolName] = -((this.declarations-i)*4);
       }
-      const obj = new ArrayDeclaration({
+      return ArrayDeclaration({
         destination: declarationLine[1],
+        size: arrayValues.length,
         values: arrayValues
       });
-      obj.toAssembly(this.symbolTable);
-      return obj;
     }
   }
 
@@ -94,43 +105,26 @@ class parser{
     //i = 1 || i = x
     if(assignmentLine[1] === '='){
       if(assignmentLine.length === 3){
-        let opType;
-        if(Number(assignmentLine[2]) === Number.NaN)
-          opType = 'variable';
-        else
-          opType = 'immediate';
-        const obj = new Assignment({
-          desination: new Operand({type: "variable", value: assignmentLine[0]}),
-          operand: new Operand({type: opType, value: assignmentLine[2]})
+        return new Assignment({
+          desination: parseOperand(assignmentLine[0]),
+          operand: parseOperand(assignmentLine[2])
         });
-        return obj;
       }
       //i = a + b || i = a + 1
-      if('+-'.includes(assignmentLine[3])){
-        let op1Type;
-        if(Number(assignmentLine[2]) === Number.NaN)
-          op1Type = 'variable';
-        else
-          op1Type = 'immediate';
-        let op2Type;
-        if(Number(assignmentLine[4]) === Number.NaN)
-          op2Type = 'variable';
-        else
-          op2Type = 'immediate';
-        const obj = new Assignment({
-          destination: new Operand({type: 'variable', value: assignmentLine[0]}),
+      if ('+-'.includes(assignmentLine[3])){
+        return new Assignment({
+          destination: parseOperand(assignmentLine[0]),
           operand: new BinaryExpression({
             operator: assignmentLine[3],
-            operand1: new Operand({type: op1Type, value: assignmentLine[2]}),
-            operand2: new Operand({type: op2Type, value: assignmentLine[4]}),
+            operand1: parseOperand(assignmentLine[2]),
+            operand2: parseOperand(assignmentLine[4]),
           }),
         });
-        return obj;
       }
     }
     //i++ || i--
     else if(assignmentLine[1] === assignmentLine[2]){
-      const obj = new Assignment({
+      return new Assignment({
         destination: new Operand({type: 'variable', value: assignmentLine[0]}),
         operand: new BinaryExpression({
           operator: assignmentLine[1],
@@ -138,31 +132,19 @@ class parser{
           operand2: new Operand({type: 'immediate', value: 1}),
         }),
       })
-      return obj;
     }
     //else syntaxError
   }
 
   makeIfStatement(condition, statements){
-    let op1Type;
-    if(Number(condition[0]) === Number.NaN)
-      op1Type = 'variable';
-    else
-      op1Type = 'immediate';
-    let op2Type;
-    if(Number(condition[2]) === Number.NaN)
-      op2Type = 'variable';
-    else
-      op2Type = 'immediate';
-    const obj = new If({
+    return new If({
       condition: new BinaryExpression({
         operator: condition[1],
-        operand1: new Operand({type: op1Type, value: condition[0]}),
-        operand2: new Operand({type: op2Type, value: condition[2]})
+        operand1: parseOperand(condition[0]),
+        operand2: parseOperand(condition[2])
       }),
       statements: this.readStatements(statements)
     });
-    return obj;
   }
 
   makeForLoop(header, statements){
@@ -186,24 +168,20 @@ class parser{
         break;
       }
     }
-    for(let i=0; i<header.length; i++)
+    for(let i=0; i<header.length; i++) {
       inc.push(header[i]);
-      let opType;
-      if(Number(term[2]) === Number.NaN)
-        opType = 'variable';
-      else
-        opType = 'immediate';
-      const obj = new ForLoop({
+    }
+
+    return new ForLoop({
       declaration: this.makeDeclaration(init),
       condition: new BinaryExpression({
         operator: term[1],
         operand1: new Operand({type: 'variable', value: term[0]}),
-        operand2: new Operand({type: opType, value: term[2]})
+        operand2: parseOperand(term[2])
       }),
       update: this.makeAssignment(inc),
       statements: this.readStatements(statements)
     });
-    return obj;
   }
 
   readStatements(source){
@@ -294,19 +272,7 @@ class parser{
           break;
         }
         case 'return':{
-          let opType;
-          if(Number(source[1]) === Number.NaN)
-            opType = 'variable';
-          else
-            opType = 'immediate';
-          instruction.push(
-            new Return({
-              operand: new Operand({
-                type: opType,
-                value: source[1]
-              })
-            })
-          );
+          instruction.push(new Return({operand: parseOperand(source[1])}));
           source.splice(0,3);
           break;
         }
