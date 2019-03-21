@@ -130,7 +130,7 @@ class ArrayDeclaration extends Node {
       });
       arrayDeclarations.push(dec.toAssembly(symbolTable));
     }
-    return arrayDeclarations.join('\n');
+    return arrayDeclarations;
   }
 }
 
@@ -351,7 +351,7 @@ class Function extends Node {
     instructions = instructions.concat(childInstructions);
 
     instructions.push("pop rbp");
-    instructions.push("ret \n");
+    instructions.push("ret");
     return instructions;
   }
 }
