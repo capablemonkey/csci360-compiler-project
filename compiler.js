@@ -167,15 +167,15 @@ class Assignment extends Node {
       return instructions;
     }
     else if(this.operand instanceof Operand){
-      if(operand.type === 'variable'){
+      if(this.operand.type === 'variable'){
         let instructions = [
-          `mov eax, ${operand.toAssembly(symbolTable)}`,
+          `mov eax, ${this.operand.toAssembly(symbolTable)}`,
           `mov ${destination}, eax`
         ];
         return instructions;
       }
-      else if(operand.type === 'immediate'){
-        return `mov ${destination}, ${operand.toAssembly(symbolTable)}`;
+      else if(this.operand.type === 'immediate'){
+        return `mov ${destination}, ${this.operand.toAssembly(symbolTable)}`;
       }
     }
   }
@@ -288,7 +288,7 @@ class FunctionCall extends Node {
     // args: Array<CallerArgument> // operand b/c can be variable, address, or immediate
     super();
     this.functionName = functionName;
-    this.args = args; 
+    this.args = args;
     this.order = 0; // the argumentRegister index we are using
   }
   toAssembly(symbolTable) {
