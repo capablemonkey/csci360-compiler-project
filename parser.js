@@ -26,71 +26,132 @@ function tokenize(sourceCode){
         token = "";
       }
     }
-    else if(sourceCode[i] != ' ' && sourceCode[i] != '\n')
+    else if(sourceCode[i] != ' ' && sourceCode[i] != '\n' && sourceCode[i] != ',')
         //It's a symbol
-        tokensArray.push(sourceCode[i]);
+        if(sourceCode[i+1] === '='){
+          tokensArray.push(sourceCode[i] + '=');
+          i++;
+        }
+        else
+          tokensArray.push(sourceCode[i]);
   }
   return tokensArray;
 }
 
-class parser{
-  constructor(sourceCode){
-    this.declaration = 1;
-    this.source = tokenize(sourceCode);
-    this.functionClass = {
-        "returnType": "",
-        "functionName": "",
-        "parameter": {
-            "type": "",
-            "name": ""
-        },
-        "instruction":[]
-  }
+function isNumber(string) {
+  if (string.length == 0) { return false; }
+  const nan = isNaN(Number(string))
+  return !nan;
 }
-  // Reads the function head of a function
-  readHead(source) {
-    let words = [];
-    words[0] = source.shift(); //returnType
-    words[1] = source.shift(); //functionName
-    if(source.shift() === '('){//(
-      words[2] = source.shift();//type
-      words[3] = source.shift();//name
-    }
-    if(source.shift() === ')') //)
-      return words;
-    //else syntaxError
+
+function parseOperand(string) {
+  if (isNumber(string)) {
+    return new Operand({type: "immediate", value: Number(string)});
   }
 
-  readDeclaration(declarationLine){          //pass to declaration function
+  return new Operand({type: "variable", value: string});
+}
+
+class Parser{
+  constructor(sourceCode){
+    this.declarations = 0;
+    this.source = sourceCode;
+    this.symbolTable = [];
+    this.functions = [];
+    this.tables = [];
+
+    this.loopCount = 0;
+    this.ifCount = 0;
+  }
+
+  makeDeclaration(declarationLine){
+    //int i = 0
     if(declarationLine[2] === '='){
-      this.declaration++;
-      let obj = {
-        "codeType": "declaration",
-        "dataType": declarationLine[0],
-        "dataName": declarationLine[1],
-        "dataValue": declarationLine[3],
-        "address": -(this.declaration*4)
-      };
-      return obj;
+      if(Number(declarationLine[3]) != Number.NaN){
+        this.declarations++;
+        this.symbolTable[declarationLine[1]] = -(this.declarations*4);
+        return new Declaration({
+          destination: new Operand({type: "variable", value: declarationLine[1]}),
+          value: new Operand({type: "immediate", value: declarationLine[3]})
+        });
+      }
+      //int i = x
+      else{
+        this.declarations++;
+        this.symbolTable[declarationLine[1]] = -(this.declarations*4);
+        return new Declaration({
+          destination: new Operand({type: "variable", value: declarationLine[1]}),
+          value: new Operand({type: "variable", value: declarationLine[3]})
+        });
+      }
+    }
+    //int i[3] = {0,1,2}
+    else if(declarationLine[2] === '['){
+      let arrayValues = declarationLine.slice(7,declarationLine.length-1);
+      while(arrayValues.length < Number(declarationLine[3])){
+        arrayValues.push('0');
+      }
+      this.declarations += Number(declarationLine[3]);
+      for(let i=0; i<arrayValues.length; i++){
+        let symbolName = `${declarationLine[1]}[${i}]`;;
+        this.symbolTable[symbolName] = -((this.declarations-i)*4);
+      }
+      return ArrayDeclaration({
+        destination: declarationLine[1],
+        size: arrayValues.length,
+        values: arrayValues
+      });
+    }
+  }
+
+  makeAssignment(assignmentLine){
+    //i = 1 || i = x
+    if(assignmentLine[1] === '='){
+      if(assignmentLine.length === 3){
+        return new Assignment({
+          desination: parseOperand(assignmentLine[0]),
+          operand: parseOperand(assignmentLine[2])
+        });
+      }
+      //i = a + b || i = a + 1
+      if ('+-'.includes(assignmentLine[3])){
+        return new Assignment({
+          destination: parseOperand(assignmentLine[0]),
+          operand: new BinaryExpression({
+            operator: assignmentLine[3],
+            operand1: parseOperand(assignmentLine[2]),
+            operand2: parseOperand(assignmentLine[4]),
+          }),
+        });
+      }
+    }
+    //i++ || i--
+    else if(assignmentLine[1] === assignmentLine[2]){
+      return new Assignment({
+        destination: new Operand({type: 'variable', value: assignmentLine[0]}),
+        operand: new BinaryExpression({
+          operator: assignmentLine[1],
+          operand1: new Operand({type: 'variable', value: assignmentLine[0]}),
+          operand2: new Operand({type: 'immediate', value: 1}),
+        }),
+      })
     }
     //else syntaxError
   }
 
-  readLogic(logicLine){
-    if(logicLine[1] === '=' && '+-*/'.includes(logicLine[3])){
-      let obj = {
-        "codeType": "logicOperation",
-        "destination": logicLine[0],
-        "operand1": logicLine[2],
-        "operator": logicLine[3],
-        "operand2": logicLine[4]
-      };
-      return obj;
-    }
-    //else syntaxError
+  makeIfStatement(condition, statements){
+    return new If({
+      condition: new BinaryExpression({
+        operator: condition[1],
+        operand1: parseOperand(condition[0]),
+        operand2: parseOperand(condition[2])
+      }),
+      statements: this.readStatements(statements),
+      id: this.ifCount++
+    });
   }
 
-  readForLoop(header, content){
+  makeForLoop(header, statements){
     let init = [];
     let term = [];
     let inc = [];
@@ -99,137 +160,174 @@ class parser{
       if(header[i] != ';')
         init.push(header[i]);
       else {
-        semicolonIndex = i;
+        header.splice(0, i+1);
         break;
       }
     }
-    header.splice(0, semicolonIndex+1);
     for(let i=0; i<header.length; i++){
       if(header[i] != ';')
         term.push(header[i]);
       else {
-        semicolonIndex = i;
+        header.splice(0, i+1);
         break;
       }
     }
-    header.splice(0, semicolonIndex+1);
-    for(let i=0; i<header.length; i++)
+    for(let i=0; i<header.length; i++) {
       inc.push(header[i]);
-    let obj = {
-      "codeType": "for",
-      "initialization": this.readDeclaration(init),
-      "termination": term,
-      "increment": this.readLogic(inc),
-      "statement": []
     }
-    obj.statement = this.readInstruction(content);
-    return obj;
+
+    return new ForLoop({
+      declaration: this.makeDeclaration(init),
+      condition: new BinaryExpression({
+        operator: term[1],
+        operand1: new Operand({type: 'variable', value: term[0]}),
+        operand2: parseOperand(term[2])
+      }),
+      update: this.makeAssignment(inc),
+      statements: this.readStatements(statements),
+      id: this.loopCount++
+    });
   }
 
-  readInstruction (source) {
+  readStatements(source){
     let instruction = [];
     while (source.length > 0) {
-        let keyword = source[0];
-        switch(keyword){
-          case 'int':
-            let declarationLine = [];
-            let semicolonIndex;
-            for(let i=0; i<source.length; i++){
-              if(source[i] != ";")
-                declarationLine.push(source[i]);
-              else{
-                semicolonIndex = i;
-                break;
-              }
+      let keyword = source[0];
+      switch(keyword){
+        case 'int':{
+          let declarationLine = [];
+          let semicolonIndex;
+          for(let i=0; i<source.length; i++){
+            if(source[i] != ";")
+              declarationLine.push(source[i]);
+            else{
+              semicolonIndex = i;
+              break;
             }
-            source.splice(0,semicolonIndex+1);
-            instruction.push(this.readDeclaration(declarationLine));
-            break;
-          case 'for':
-            let header = [];
-            let content;
-            if(source[1] === '('){
-              for(let i=2; i<source.length; i++){
-                if(source[i] != ')')
-                  header.push(source[i]);
-                else {
-                  source.splice(0,i+1);
-                  break;
-                }
-              }
-            }
-            //else syntaxError
-            if(source[0] === '{'){
-              let curlyBraces = 0;
-              let endBraceIndex;
-              for(let i=1; i<source.length; i++){
-                if(source[i] === '{'){
-                  curlyBraces++;
-                }
-                else if(source[i] === '}'){
-                  if(curlyBraces > 0)
-                    curlyBraces--;
-                  else{
-                    endBraceIndex = i;
-                    break;
-                  }
-                }
-              }
-              content = source.slice(1,endBraceIndex);
-              source.splice(0,endBraceIndex+1);
-            }
-            //else syntaxError
-            instruction.push(this.readForLoop(header,content));
-            break;
-          case 'return':
-            let returnStatement = [];
-            for(let i=0; i<source.length; i++){
-              if(source[i] != ';')
-                returnStatement.push(source[i]);
+          }
+          source.splice(0,semicolonIndex+1);
+          instruction.push(this.makeDeclaration(declarationLine));
+          break;
+        }
+        case 'if':{
+          let condition = [];
+          let statements = [];
+          if(source[1] === '('){
+            for(let i=2; i<source.length; i++){
+              if(source[i] != ')')
+                condition.push(source[i]);
               else {
                 source.splice(0,i+1);
                 break;
               }
             }
-            if(returnStatement.length === 2){
-              instruction.push(`${returnStatement[0]} ${returnStatement[1]}`);
+          }
+          //else syntaxError
+          if(source[0] === '{'){
+            let curlyBraces = 0;
+            for(let i=1; i<source.length; i++){
+              if(source[i] === '{')
+                curylBraces++;
+              else if(source[i] === '}'){
+                if(curlyBraces > 0)
+                  curlyBraces--;
+                else{
+                  statements = source.slice(1,i);
+                  source.splice(0,i+1);
+                  break;
+                }
+              }
             }
-            //else evaluate
-            //instruction.push(returnStatement);
-            break;
-
-          default:
-            let statement = [];
-            for(let i=0; i<source.length; i++){
-              if(source[i] != ';')
-                statement.push(source[i]);
-              else{
+          }
+          //else syntaxError
+          instruction.push(this.makeIfStatement(condition, statements));
+          break;
+        }
+        case 'for':{
+          let header = [];
+          let statements = [];
+          if(source[1] === '('){
+            for(let i=2; i<source.length; i++){
+              if(source[i] != ')')
+                header.push(source[i]);
+              else {
                 source.splice(0,i+1);
                 break;
               }
             }
-            instruction.push(this.readLogic(statement));
-            break;
+          }
+          //else syntaxError
+          if(source[0] === '{'){
+            let curlyBraces = 0;
+            for(let i=1; i<source.length; i++){
+              if(source[i] === '{')
+                curlyBraces++;
+              else if(source[i] === '}')
+                if(curlyBraces > 0)
+                  curlyBraces--;
+                else{
+                  statements = source.slice(1,i);
+                  source.splice(0,i+1);
+                  break;
+                }
+              }
+            }
+          //else syntaxError
+          instruction.push(this.makeForLoop(header,statements));
+          break;
+        }
+        case 'return':{
+          instruction.push(new Return({operand: parseOperand(source[1])}));
+          source.splice(0,3);
+          break;
+        }
+        default:{
+          let statement = [];
+          for(let i=0; i<source.length; i++){
+            if(source[i] != ';')
+              statement.push(source[i]);
+            else{
+              source.splice(0,i+1);
+              break;
+            }
+          }
+          instruction.push(this.makeAssignment(statement));
+          break;
+        }
       }
     }
     return instruction;
   }
 
-  // Wrapper function called to generate analyzed code
-  getAnalysis () {
-      let head = this.readHead(this.source);
-      this.functionClass.returnType = head[0];
-      this.functionClass.functionName = head[1];
-      this.functionClass.parameter = {
-          "type": head[2],
-          "name": head[3],
-          "codeType": "declaration",
-          "address": -(this.declaration*4)
-      };
+  makeFunction(){
+    while(this.source.length > 0){
+      //int funcName(int x, int a[5], int y, int z)
+      const funcName = this.source[1];
+      let funcArgs = [];
+      let funcStatements = [];
+      if(this.source[2] === '('){
+        let currentOrder = 0;
+        for(let i=3; i<this.source.length; i+=2){
+          if(this.source[i] != ')'){
+            this.declarations++;
+            this.symbolTable[this.source[i+1]] = -(this.declarations*4);
+            funcArgs.push(new Argument({
+              variableName: this.source[i+1],
+              order: currentOrder
+            }));
+            currentOrder++;
+            if(this.source[i+2] === '[')
+              i+=3;
+          }
+          else{
+            this.source.splice(0,i+1);
+            break;
+          }
+        }
+      }
       let functionCode;
       if(this.source.shift() === '{'){
         let openBraces = 0;
-        let endBraceIndex;
         for(let i=0; i < this.source.length; i++){
           if(this.source[i] === '{')
             openBraces++;
@@ -237,17 +335,24 @@ class parser{
             if(openBraces > 0)
               openBraces--;
             else{
-              endBraceIndex = i;
+              functionCode = this.source.slice(0,i);
+              this.source.splice(0,i+1);
               break;
             }
           }
         }
-      functionCode = this.source.slice(0,endBraceIndex);
-      console.log(functionCode);
-      this.source.splice(0,endBraceIndex+1);
       }
-      //else syntaxError
-        this.functionClass.instruction = this.readInstruction(functionCode);
-        return this.functionClass;
+      //else syntaxError;
+      funcStatements = this.readStatements(functionCode);
+      this.functions.push(new Function({
+        name: funcName,
+        args: funcArgs,
+        statements: funcStatements
+      }));
+      this.tables.push(this.symbolTable);
+      this.symbolTable = [];
+      this.declarations = 0;
+    }
+    return this;
   }
 }

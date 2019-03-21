@@ -3,6 +3,7 @@ function compile(parseTree) {
   let loopId = 1; // id variables initialized outside all functions 
   let ifId = 1; // value incremented with each new function
   const sumFunction = new Function({
+    name: 'sum',
     args: [
       new Argument({variableName: "num", order: 0, type: "int"})
     ],
@@ -82,8 +83,8 @@ function compile(parseTree) {
 }
 
 function parse(sourceCode) {
-  const analyzer = new parser(sourceCode);
-  const parseTree = analyzer.getAnalysis();
+  const parser = new Parser(sourceCode);
+  const parseTree = parser.makeFunction();
   return parseTree;
 }
 
@@ -105,25 +106,37 @@ function fillTable(table, data){
 //the source code part of the External Storage
 function toBinary(sourceCode, fillTable){
   const table = document.getElementById('external-source');
-  const externalStorage = new Array(1024);
-  for(let i=0; i<sourceCode.length; i++){
-    binaryChar = sourceCode.charCodeAt(i).toString(2);
-    externalStorage[i] = binaryChar.padStart(8,"0");
-  }
-  externalStorage.fill("00000000", sourceCode.length);
+  const externalStorage = [];
+  sourceCode.forEach(function(element){
+    if(element === 'int' || element === 'return'){
+      element += ' ';
+    }
+    for(let i=0; i<element.length; i++){
+      binaryChar = element.charCodeAt(i).toString(2);
+      externalStorage.push(binaryChar.padStart(8,"0"));
+    }
+  });
+  while(externalStorage.length < 1024)
+    externalStorage.push('00000000');
   fillTable(table, externalStorage);
 }
 
 $(document).ready(function() {
   $('.button-compile').click(function(){
     const input = $('.editor-textbox').first().val();
-    const parseTree = parse(input);
+    const tokens = tokenize(input);
+    const parseTree = parse(tokens);
 
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
 
-    const assembly = compile(parseTree);
-    $('#assembly').text(assembly.join("\n"));
+    const functions = parseTree.functions;
+    const tables = parseTree.tables;
 
-    toBinary(input,fillTable);
+    const assembly = functions.
+      map((f, idx) => f.toAssembly(tables[idx])).
+      flat();
+
+    $('#assembly').text(assembly.join('\n'));
+    toBinary(tokens, fillTable);
   })
 })
