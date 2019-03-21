@@ -130,7 +130,10 @@ class BinaryExpression extends Node {
       "+": "add",
       "-": "sub",
       ">": "cmp",
-      "<": "cmp"
+      "<": "cmp",
+      "==": "cmp",
+      "<=": "cmp",
+      ">=": "cmp"
     };
 
     if (!(this.operator in operatorToInstruction)) {
