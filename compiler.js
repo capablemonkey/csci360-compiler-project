@@ -64,8 +64,9 @@ class CallerArgument extends Node {
       default:
         throw `Invalid argument type: ${this.type}`;
     }
+  }
 }
-  
+
 class ArrayElement extends Node {
   constructor({name, index}) {
     super();
