@@ -59,6 +59,9 @@ class Parser{
     this.symbolTable = [];
     this.functions = [];
     this.tables = [];
+
+    this.loopCount = 0;
+    this.ifCount = 0;
   }
 
   makeDeclaration(declarationLine){
@@ -143,7 +146,8 @@ class Parser{
         operand1: parseOperand(condition[0]),
         operand2: parseOperand(condition[2])
       }),
-      statements: this.readStatements(statements)
+      statements: this.readStatements(statements),
+      id: this.ifCount++
     });
   }
 
@@ -180,7 +184,8 @@ class Parser{
         operand2: parseOperand(term[2])
       }),
       update: this.makeAssignment(inc),
-      statements: this.readStatements(statements)
+      statements: this.readStatements(statements),
+      id: this.loopCount++
     });
   }
 
