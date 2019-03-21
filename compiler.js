@@ -116,25 +116,6 @@ class Declaration extends Node {
   }
 }
 
-class ArrayDeclaration extends Node {
-  constructor({destination, values}) {
-    super();
-    this.destination = destination;
-    this.values = values;
-  }
-  toAssembly(symbolTable){
-    let arrayDeclarations = [];
-    for(let i=0; i<this.values.length; i++){
-      const dec = new Declaration({
-        destination: new Operand({type: "variable", value: `${this.destination}[${i}]`}),
-        value: new Operand({type: "immediate", value: this.values[i]})
-      });
-      arrayDeclarations.push(dec.toAssembly(symbolTable));
-    }
-    return arrayDeclarations;
-  }
-}
-
 class BinaryExpression extends Node {
   constructor({operator, operand1, operand2}) {
     super();
