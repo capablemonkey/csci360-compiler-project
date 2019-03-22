@@ -17,6 +17,8 @@
       mocha.checkLeaks();
       const expect = chai.expect;
       const assert = chai.assert;
+
+      chai.config.truncateThreshold = 0
     </script>
     <script src="compiler.js"></script>
     <script src="parser.js"></script>
