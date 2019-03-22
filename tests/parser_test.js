@@ -58,5 +58,162 @@ describe("parser", () => {
 
       testSingleStatement(input, expected);
     });
+
+    it("should parse function call: int foo = func(array);", () => {
+      const input = "int foo = func(array);";
+      const expected = new Declaration({
+        destination: new Operand({type: "variable", value: "foo"}),
+        operand: new FunctionCall({
+          functionName: "func",
+          args: [
+            new CallerArgument({
+              value: "array",
+              type: "address",
+              order: 0,
+              dataType: "int *"
+            })
+          ]
+        })
+      });
+
+      testSingleStatement(input, expected);
+    });
+
+    it("should parse array declaration: int foo[3] = {1, 2, 3};", () => {
+      const input = "int foo[3] = {1, 2, 3};";
+      const expected = new ArrayDeclaration({
+        destination: "foo",
+        size: 3,
+        values: ["1", "2", "3"]
+      });
+
+      testSingleStatement(input, expected);
+    });
+  });
+
+  describe("assignment", () => {
+    it("should parse immediate value: foo = 1;", () => {
+      const input = "foo = 1;";
+      const expected = new Assignment({
+        destination: new Operand({type: "variable", value: "foo"}),
+        operand: new Operand({type: "immediate", value: 1})
+      });
+
+      testSingleStatement(input, expected);
+    });
+
+    it("should parse variable value: foo = bar;", () => {
+      const input = "foo = bar;";
+      const expected = new Assignment({
+        destination: new Operand({type: "variable", value: "foo"}),
+        operand: new Operand({type: "variable", value: "bar"})
+      });
+
+      testSingleStatement(input, expected);
+    });
+
+    it("should parse binary expression with immediate: foo = bar + 1;", () => {
+      const input = "foo = bar + 1;";
+      const expected = new Assignment({
+        destination: new Operand({type: "variable", value: "foo"}),
+        operand: new BinaryExpression({
+          operator: "+",
+          operand1: new Operand({type: "variable", value: "bar"}),
+          operand2: new Operand({type: "immediate", value: 1})
+        })
+      });
+
+      testSingleStatement(input, expected);
+    });
+
+    it("should parse binary expression with variable: foo = bar + qux;", () => {
+      const input = "foo = bar + qux;";
+      const expected = new Assignment({
+        destination: new Operand({type: "variable", value: "foo"}),
+        operand: new BinaryExpression({
+          operator: "+",
+          operand1: new Operand({type: "variable", value: "bar"}),
+          operand2: new Operand({type: "variable", value: "qux"})
+        })
+      });
+
+      testSingleStatement(input, expected);
+    });
+
+    it("should parse function call: foo = func(array);", () => {
+      const input = "foo = func(array);";
+      const expected = new Assignment({
+        destination: new Operand({type: "variable", value: "foo"}),
+        operand: new FunctionCall({
+          functionName: "func",
+          args: [
+            new CallerArgument({
+              value: "array",
+              type: "address",
+              order: 0,
+              dataType: "int *"
+            })
+          ]
+        })
+      });
+
+      testSingleStatement(input, expected);
+    });
+
+    it("should parse increment: i++", () => {
+      const input = "foo++;";
+      const expected = new Assignment({
+        destination: new Operand({type: "variable", value: "foo"}),
+        operand: new BinaryExpression({
+          operator: "+",
+          operand1: new Operand({type: "variable", value: "foo"}),
+          operand2: new Operand({type: "immediate", value: 1})
+        })
+      });
+
+      testSingleStatement(input, expected);
+    });
+
+    it("should parse decrement: i--", () => {
+      const input = "foo--;";
+      const expected = new Assignment({
+        destination: new Operand({type: "variable", value: "foo"}),
+        operand: new BinaryExpression({
+          operator: "-",
+          operand1: new Operand({type: "variable", value: "foo"}),
+          operand2: new Operand({type: "immediate", value: 1})
+        })
+      });
+
+      testSingleStatement(input, expected);
+    });
+  });
+
+  describe("if", () => {
+    it("should parse if statement", () => {
+      const input = "if (a < b) { a = b; }";
+      const expected = new If({
+        id: 0,
+        condition: new BinaryExpression({
+          operator: "<",
+          operand1: new Operand({type: "variable", value: "a"}),
+          operand2: new Operand({type: "variable", value: "b"}),
+        }),
+        statements: [new Assignment({
+          destination: new Operand({type: "variable", value: "a"}),
+          operand: new Operand({type: "variable", value: "b"})
+        })]
+      });
+
+      testSingleStatement(input, expected);
+    });
+  });
+
+  describe("for", () => {
+    // TODO
+  });
+
+  describe("function", () => {
+    // TODO
   });
 });
