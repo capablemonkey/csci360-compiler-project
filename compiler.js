@@ -107,27 +107,27 @@ class Argument extends Node {
     // in order that they are used; e.g. if there are 2 arguments, then edi and esi
     // are used
     const argumentRegisters = ["edi", "esi", "edx", "ecx"];
-    const d = new Declaration({
+    const d = new Assignment({
       destination: new Operand({type: "variable", value: this.variableName}),
-      value: new Operand({type: "register", value: argumentRegisters[this.order]})
+      operand: new Operand({type: "register", value: argumentRegisters[this.order]})
     });
     return d.toAssembly(symbolTable);
   }
 }
 
-// takes a destination Operand and sets that equal to the value Operand
 class Declaration extends Node {
-  constructor({destination, value}) {
+  constructor({destination, operand}) {
     super();
     this.destination = destination;
-    this.value = value;
+    this.operand = operand;
   }
 
   toAssembly(symbolTable) {
-    // TODO: should be able to support expression
-    const dest = this.destination.toAssembly(symbolTable);
-    const val = this.value.toAssembly(symbolTable);
-    return `mov ${dest}, ${val}`;
+    const a = new Assignment({
+      destination: this.destination,
+      operand: this.operand
+    });
+    return a.toAssembly(symbolTable);
   }
 }
 
@@ -191,22 +191,23 @@ class Assignment extends Node {
         `mov ${destination}, eax`
       ].flat();
       return instructions;
-    } else if(this.operand instanceof Operand) {
-      if(this.operand.type === 'variable'){
-        let instructions = [
+    } else if (this.operand instanceof Operand) {
+        if(this.operand.type === 'immediate' || this.operand.type === 'register') {
+          return `mov ${destination}, ${this.operand.toAssembly(symbolTable)}`;
+        }
+
+        return [
           `mov eax, ${this.operand.toAssembly(symbolTable)}`,
           `mov ${destination}, eax`
         ];
-        return instructions;
-      } else if(this.operand.type === 'immediate') {
-        return `mov ${destination}, ${this.operand.toAssembly(symbolTable)}`;
-      }
     } else if (this.operand instanceof ArrayElement) {
       const arr = this.operand.toAssembly(symbolTable);
       return [
         arr.preInstructions,
         `mov ${destination}, ${arr.resultOperand}`
       ].flat();
+    } else {
+      throw `Invalid operand for assignment: ${this.operand}`;
     }
   }
 }
@@ -351,7 +352,8 @@ class Function extends Node {
     let instructions = [
       `${this.name}():`,
       "push rbp",
-      "mov rbp, rsp"
+      "mov rbp, rsp",
+      this.allocateMemory()
     ]
 
     // handle arguments (load them from registers)
@@ -365,6 +367,32 @@ class Function extends Node {
     instructions.push("pop rbp");
     instructions.push("ret");
     return instructions;
+  }
+
+  allocateMemory() {
+    const argBytes = this.args.length * 4; // number of args * 4 bytes per arg
+
+    // recursively counts declarations in function statements
+    const countDeclarations = (statements) => {
+      let count = 0;
+      statements.forEach((s) => {
+        if (s instanceof Declaration) { count += 1; }
+        if (s instanceof ArrayDeclaration) { count += s.size; }
+        if (s instanceof ForLoop) {
+          count += 1 // for its declaration
+          count += countDeclarations(s.statements)
+        }
+        if (s instanceof If) {
+          count += countDeclarations(s.statements)
+        }
+      });
+
+      return count;
+    }
+
+    const declarationCount = countDeclarations(this.statements);
+    const totalBytes = argBytes + declarationCount * 4;
+    return `sub rsp, ${totalBytes}`;
   }
 }
 
