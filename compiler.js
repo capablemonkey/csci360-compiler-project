@@ -321,6 +321,7 @@ class Function extends Node {
     }
 
     let instructions = [
+      `${this.name}():`,
       "push rbp",
       "mov rbp, rsp"
     ]
