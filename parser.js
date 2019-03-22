@@ -70,35 +70,54 @@ class Parser{
       if(Number(declarationLine[3]) != Number.NaN){
         this.declarations++;
         this.symbolTable[declarationLine[1]] = -(this.declarations*4);
-        return new Declaration({
+        return new Assignment({
           destination: new Operand({type: "variable", value: declarationLine[1]}),
-          value: new Operand({type: "immediate", value: declarationLine[3]})
+          operand: new Operand({type: "immediate", value: declarationLine[3]})
         });
+      }
+      // int i = f(a)
+      if (declarationLine.includes('(')) {
+        return new Assignment({
+          destination: parseOperand(declarationLine[1]),
+          operand: new FunctionCall({
+            functionName: declarationLine[3],
+            args: [
+              new CallerArgument({
+                value: declarationLine[5],
+                type: "address",
+                order: 0,
+                dataType: "int *"
+              })
+            ]
+          })
+        })
       }
       //int i = x
       else{
         this.declarations++;
         this.symbolTable[declarationLine[1]] = -(this.declarations*4);
-        return new Declaration({
+        return new Assignment({
           destination: new Operand({type: "variable", value: declarationLine[1]}),
-          value: new Operand({type: "variable", value: declarationLine[3]})
+          operand: new Operand({type: "variable", value: declarationLine[3]})
         });
       }
     }
     //int i[3] = {0,1,2}
     else if(declarationLine[2] === '['){
       let arrayValues = declarationLine.slice(7,declarationLine.length-1);
-      while(arrayValues.length < Number(declarationLine[3])){
+      const arrayName = declarationLine[1];
+      const arraySize = Number(declarationLine[3]);
+
+      while(arrayValues.length < arraySize){
         arrayValues.push('0');
       }
-      this.declarations += Number(declarationLine[3]);
-      for(let i=0; i<arrayValues.length; i++){
-        let symbolName = `${declarationLine[1]}[${i}]`;;
-        this.symbolTable[symbolName] = -((this.declarations-i)*4);
-      }
+
+      this.declarations += arraySize;
+      this.symbolTable[arrayName] = -((this.declarations)*4);
+
       return new ArrayDeclaration({
         destination: declarationLine[1],
-        size: arrayValues.length,
+        size: arraySize,
         values: arrayValues
       });
     }
@@ -121,8 +140,26 @@ class Parser{
             operator: assignmentLine[3],
             operand1: parseOperand(assignmentLine[2]),
             operand2: parseOperand(assignmentLine[4]),
-          }),
+          })
         });
+      }
+
+      // i = f(a)
+      if (assignmentLine.includes('(')) {
+        return new Assignment({
+          destination: parseOperand(assignmentLine[0]),
+          operand: new FunctionCall({
+            functionName: assignmentLine[2],
+            args: [
+              new CallerArgument({
+                value: assignmentLine[4],
+                type: "address",
+                order: 0,
+                dataType: "int *"
+              })
+            ]
+          })
+        })
       }
     }
     //i++ || i--
@@ -284,9 +321,9 @@ class Parser{
         default:{
           let statement = [];
           for(let i=0; i<source.length; i++){
-            if(source[i] != ';')
+            if (source[i] != ';') {
               statement.push(source[i]);
-            else{
+            } else {
               source.splice(0,i+1);
               break;
             }
@@ -299,59 +336,64 @@ class Parser{
     return instruction;
   }
 
-  makeFunction(){
-    while(this.source.length > 0){
-      //int funcName(int x, int a[5], int y, int z)
-      const funcName = this.source[1];
-      let funcArgs = [];
-      let funcStatements = [];
-      if(this.source[2] === '('){
-        let currentOrder = 0;
-        for(let i=3; i<this.source.length; i+=2){
-          if(this.source[i] != ')'){
-            this.declarations++;
-            this.symbolTable[this.source[i+1]] = -(this.declarations*4);
-            funcArgs.push(new Argument({
-              variableName: this.source[i+1],
-              order: currentOrder
-            }));
-            currentOrder++;
-            if(this.source[i+2] === '[')
-              i+=3;
-          }
+  makeFunction() {
+    //int funcName(int x, int a[5], int y, int z)
+    const funcName = this.source[1];
+    let funcArgs = [];
+    let funcStatements = [];
+    if(this.source[2] === '('){
+      let currentOrder = 0;
+      for(let i=3; i<this.source.length; i+=2){
+        if(this.source[i] != ')'){
+          this.declarations++;
+          this.symbolTable[this.source[i+1]] = -(this.declarations*4);
+          funcArgs.push(new Argument({
+            variableName: this.source[i+1],
+            order: currentOrder
+          }));
+          currentOrder++;
+          if(this.source[i+2] === '[')
+            i+=3;
+        }
+        else{
+          this.source.splice(0,i+1);
+          break;
+        }
+      }
+    }
+    let functionCode;
+    if(this.source.shift() === '{'){
+      let openBraces = 0;
+      for(let i=0; i < this.source.length; i++){
+        if(this.source[i] === '{')
+          openBraces++;
+        else if(this.source[i] === '}'){
+          if(openBraces > 0)
+            openBraces--;
           else{
+            functionCode = this.source.slice(0,i);
             this.source.splice(0,i+1);
             break;
           }
         }
       }
-      let functionCode;
-      if(this.source.shift() === '{'){
-        let openBraces = 0;
-        for(let i=0; i < this.source.length; i++){
-          if(this.source[i] === '{')
-            openBraces++;
-          else if(this.source[i] === '}'){
-            if(openBraces > 0)
-              openBraces--;
-            else{
-              functionCode = this.source.slice(0,i);
-              this.source.splice(0,i+1);
-              break;
-            }
-          }
-        }
-      }
-      //else syntaxError;
-      funcStatements = this.readStatements(functionCode);
-      this.functions.push(new Function({
-        name: funcName,
-        args: funcArgs,
-        statements: funcStatements
-      }));
-      this.tables.push(this.symbolTable);
-      this.symbolTable = [];
-      this.declarations = 0;
+    }
+    //else syntaxError;
+    funcStatements = this.readStatements(functionCode);
+    const fn = new Function({
+      name: funcName,
+      args: funcArgs,
+      statements: funcStatements
+    });
+    this.functions.push(fn);
+    this.tables.push(this.symbolTable);
+    this.symbolTable = [];
+    this.declarations = 0;
+  }
+
+  parse() {
+    while(this.source.length > 0){
+      this.makeFunction();
     }
     return this;
   }

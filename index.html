@@ -21,12 +21,18 @@
       <div class="editor col-sm">
         <h4>C++ source</h4>
         <textarea class="editor-textbox code-font">
-int sum(int num){
+int sum(int num[5]){
   int sum=0;
-  for(int i=0;i<num;i=i+1){
+  for(int i=0;i<5;i=i+1){
     sum=sum+i;
   }
   return sum;
+}
+
+int main() {
+  int k[3] = {0,1,2};
+  int result = 0;
+  result = sum(k);
 }
         </textarea>
         <button class="button-compile btn btn-lg btn-primary" type="">compile to x86</button>
