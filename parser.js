@@ -48,11 +48,15 @@ function parseOperand(string) {
   if (isNumber(string)) {
     return new Operand({type: "immediate", value: Number(string)});
   }
-
-  return new Operand({type: "variable", value: string});
+  //if (string.includes('[')) {// if is array
+  //  let between = '';
+  //  
+  //  return new Operand({type: "variable", value: })
+  //} else  
+    return new Operand({type: "variable", value: string});
 }
 
-class Parser{
+class Parser {
   constructor(sourceCode){
     this.declarations = 0;
     this.source = sourceCode;
@@ -104,7 +108,34 @@ class Parser{
     }
   }
 
+  groupArray(assignmentLine) {
+    let stk = [];
+    // treat front of array like a stack
+    // go from the front of the assignment line
+    // if we see [ then push to the array
+    // until we see ] we add elements to the back element of array
+    let between = '';
+    for (let i = 0; i < assignmentLine.length; i++) {
+      let curr = assignmentLine[i];
+      if (curr == ']') {
+        stk[stk.length-1] += between + curr;
+        stk[stk.length-1] = stk[stk.length-2] + stk[stk.length-1];
+        stk.shift();
+        between = '';
+      } else if (curr == '[') {
+        stk.push(curr);
+      } else {
+        if (stk.length && stk[stk.length-1] == '[')
+          between += curr;
+        else
+          stk.push(curr);
+      }
+    } return stk;
+  }
+
   makeAssignment(assignmentLine){
+    assignmentLine = this.groupArray(assignmentLine);
+    console.log(assignmentLine);
     //i = 1 || i = x
     if(assignmentLine[1] === '='){
       if(assignmentLine.length === 3){
@@ -284,6 +315,7 @@ class Parser{
         default:{
           let statement = [];
           for(let i=0; i<source.length; i++){
+            
             if(source[i] != ';')
               statement.push(source[i]);
             else{
