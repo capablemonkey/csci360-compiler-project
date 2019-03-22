@@ -91,7 +91,7 @@ function parseOperand(string) {
   }
   let between = splitArray(string);
   if (between.length)// if is array, only supports 1 dimensional arrays
-    return new ArrayElement({name: between[0], value: between[1]});
+    return new ArrayElement({name: between[0], value: between[1], foreign: true});
   else
     return new Operand({type: "variable", value: string});
 }
@@ -173,7 +173,7 @@ class Parser {
     if(assignmentLine[1] === '='){
       if(assignmentLine.length === 3){
         return new Assignment({
-          desination: parseOperand(assignmentLine[0]),
+          destination: parseOperand(assignmentLine[0]),
           operand: parseOperand(assignmentLine[2])
         });
       }
@@ -222,6 +222,7 @@ class Parser {
   }
 
   makeIfStatement(condition, statements){
+    condition = groupArray(condition)
     return new If({
       condition: new BinaryExpression({
         operator: condition[1],
