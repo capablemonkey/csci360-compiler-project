@@ -1,6 +1,6 @@
 function compile(parseTree) {
   // sample function:
-  let loopId = 1; // id variables initialized outside all functions 
+  let loopId = 1; // id variables initialized outside all functions
   let ifId = 1; // value incremented with each new function
   const sumFunction = new Function({
     name: 'sum',
@@ -125,6 +125,7 @@ $(document).ready(function() {
   $('.button-compile').click(function(){
     const input = $('.editor-textbox').first().val();
     const tokens = tokenize(input);
+    toBinary(tokens, fillTable);
     const parseTree = parse(tokens);
 
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
@@ -137,6 +138,5 @@ $(document).ready(function() {
       flat();
 
     $('#assembly').text(assembly.join('\n'));
-    toBinary(tokens, fillTable);
   })
 })

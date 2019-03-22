@@ -96,7 +96,7 @@ class Parser{
         let symbolName = `${declarationLine[1]}[${i}]`;;
         this.symbolTable[symbolName] = -((this.declarations-i)*4);
       }
-      return ArrayDeclaration({
+      return new ArrayDeclaration({
         destination: declarationLine[1],
         size: arrayValues.length,
         values: arrayValues
