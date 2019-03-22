@@ -350,7 +350,11 @@ class Function extends Node {
       statements.forEach((s) => {
         if (s instanceof Declaration) { count += 1; }
         if (s instanceof ArrayDeclaration) { count += s.size; }
-        if (s instanceof ForLoop || s instanceof If) {
+        if (s instanceof ForLoop) {
+          count += 1 // for its declaration
+          count += countDeclarations(s.statements)
+        }
+        if (s instanceof If) {
           count += countDeclarations(s.statements)
         }
       });
