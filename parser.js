@@ -44,15 +44,55 @@ function isNumber(string) {
   return !nan;
 }
 
+// group array components in an assignment line and return the modified assignment line 
+function groupArray(assignmentLine) {
+  let stk = [];
+  // treat back of array like a stack
+  // go from the front of the assignment line
+  // if we see [ then push to the array
+  // until we see ] we add elements of the line to between 
+  let between = '';
+  for (let i = 0; i < assignmentLine.length; i++) {
+    let curr = assignmentLine[i];
+    if (curr == ']') {
+      stk[stk.length-1] += between + curr;
+      stk[stk.length-1] = stk[stk.length-2] + stk[stk.length-1];
+      stk.shift();
+      between = '';
+    } else if (curr == '[') {
+      stk.push(curr);
+    } else {
+      if (stk.length && stk[stk.length-1] == '[')
+        between += curr;
+      else
+        stk.push(curr);
+    }
+  } return stk;
+}
+
+// Splits an grouped array into its name and index
+function splitArray(string) {
+  let between = '';
+  let stk = [];
+  for (let i = 0; i < string.length; i++) {
+    if (string[i] == '[') {
+      stk.push(between);
+      between = '';
+    } else if (string[i] == ']')
+      stk.push(between);
+    else
+      between += string[i];
+  } return stk;
+}
+
 function parseOperand(string) {
   if (isNumber(string)) {
     return new Operand({type: "immediate", value: Number(string)});
   }
-  //if (string.includes('[')) {// if is array
-  //  let between = '';
-  //  
-  //  return new Operand({type: "variable", value: })
-  //} else  
+  let between = splitArray(string);
+  if (between.length)// if is array, only supports 1 dimensional arrays
+    return new ArrayElement({name: arr[0], value: arr[1]});
+  else  
     return new Operand({type: "variable", value: string});
 }
 
@@ -74,68 +114,61 @@ class Parser {
       if(Number(declarationLine[3]) != Number.NaN){
         this.declarations++;
         this.symbolTable[declarationLine[1]] = -(this.declarations*4);
-        return new Declaration({
+        return new Assignment({
           destination: new Operand({type: "variable", value: declarationLine[1]}),
-          value: new Operand({type: "immediate", value: declarationLine[3]})
+          operand: new Operand({type: "immediate", value: declarationLine[3]})
         });
+      }
+      // int i = f(a)
+      if (declarationLine.includes('(')) {
+        return new Assignment({
+          destination: parseOperand(declarationLine[1]),
+          operand: new FunctionCall({
+            functionName: declarationLine[3],
+            args: [
+              new CallerArgument({
+                value: declarationLine[5],
+                type: "address",
+                order: 0,
+                dataType: "int *"
+              })
+            ]
+          })
+        })
       }
       //int i = x
       else{
         this.declarations++;
         this.symbolTable[declarationLine[1]] = -(this.declarations*4);
-        return new Declaration({
+        return new Assignment({
           destination: new Operand({type: "variable", value: declarationLine[1]}),
-          value: new Operand({type: "variable", value: declarationLine[3]})
+          operand: new Operand({type: "variable", value: declarationLine[3]})
         });
       }
     }
     //int i[3] = {0,1,2}
     else if(declarationLine[2] === '['){
       let arrayValues = declarationLine.slice(7,declarationLine.length-1);
-      while(arrayValues.length < Number(declarationLine[3])){
+      const arrayName = declarationLine[1];
+      const arraySize = Number(declarationLine[3]);
+
+      while(arrayValues.length < arraySize){
         arrayValues.push('0');
       }
-      this.declarations += Number(declarationLine[3]);
-      for(let i=0; i<arrayValues.length; i++){
-        let symbolName = `${declarationLine[1]}[${i}]`;;
-        this.symbolTable[symbolName] = -((this.declarations-i)*4);
-      }
-      return ArrayDeclaration({
+
+      this.declarations += arraySize;
+      this.symbolTable[arrayName] = -((this.declarations)*4);
+
+      return new ArrayDeclaration({
         destination: declarationLine[1],
-        size: arrayValues.length,
+        size: arraySize,
         values: arrayValues
       });
     }
   }
 
-  groupArray(assignmentLine) {
-    let stk = [];
-    // treat front of array like a stack
-    // go from the front of the assignment line
-    // if we see [ then push to the array
-    // until we see ] we add elements to the back element of array
-    let between = '';
-    for (let i = 0; i < assignmentLine.length; i++) {
-      let curr = assignmentLine[i];
-      if (curr == ']') {
-        stk[stk.length-1] += between + curr;
-        stk[stk.length-1] = stk[stk.length-2] + stk[stk.length-1];
-        stk.shift();
-        between = '';
-      } else if (curr == '[') {
-        stk.push(curr);
-      } else {
-        if (stk.length && stk[stk.length-1] == '[')
-          between += curr;
-        else
-          stk.push(curr);
-      }
-    } return stk;
-  }
-
   makeAssignment(assignmentLine){
-    assignmentLine = this.groupArray(assignmentLine);
-    console.log(assignmentLine);
+    assignmentLine = groupArray(assignmentLine); // if there is an array group it
     //i = 1 || i = x
     if(assignmentLine[1] === '='){
       if(assignmentLine.length === 3){
@@ -152,8 +185,26 @@ class Parser {
             operator: assignmentLine[3],
             operand1: parseOperand(assignmentLine[2]),
             operand2: parseOperand(assignmentLine[4]),
-          }),
+          })
         });
+      }
+
+      // i = f(a)
+      if (assignmentLine.includes('(')) {
+        return new Assignment({
+          destination: parseOperand(assignmentLine[0]),
+          operand: new FunctionCall({
+            functionName: assignmentLine[2],
+            args: [
+              new CallerArgument({
+                value: assignmentLine[4],
+                type: "address",
+                order: 0,
+                dataType: "int *"
+              })
+            ]
+          })
+        })
       }
     }
     //i++ || i--
@@ -315,10 +366,9 @@ class Parser {
         default:{
           let statement = [];
           for(let i=0; i<source.length; i++){
-            
-            if(source[i] != ';')
+            if (source[i] != ';') {
               statement.push(source[i]);
-            else{
+            } else {
               source.splice(0,i+1);
               break;
             }
@@ -331,59 +381,64 @@ class Parser {
     return instruction;
   }
 
-  makeFunction(){
-    while(this.source.length > 0){
-      //int funcName(int x, int a[5], int y, int z)
-      const funcName = this.source[1];
-      let funcArgs = [];
-      let funcStatements = [];
-      if(this.source[2] === '('){
-        let currentOrder = 0;
-        for(let i=3; i<this.source.length; i+=2){
-          if(this.source[i] != ')'){
-            this.declarations++;
-            this.symbolTable[this.source[i+1]] = -(this.declarations*4);
-            funcArgs.push(new Argument({
-              variableName: this.source[i+1],
-              order: currentOrder
-            }));
-            currentOrder++;
-            if(this.source[i+2] === '[')
-              i+=3;
-          }
+  makeFunction() {
+    //int funcName(int x, int a[5], int y, int z)
+    const funcName = this.source[1];
+    let funcArgs = [];
+    let funcStatements = [];
+    if(this.source[2] === '('){
+      let currentOrder = 0;
+      for(let i=3; i<this.source.length; i+=2){
+        if(this.source[i] != ')'){
+          this.declarations++;
+          this.symbolTable[this.source[i+1]] = -(this.declarations*4);
+          funcArgs.push(new Argument({
+            variableName: this.source[i+1],
+            order: currentOrder
+          }));
+          currentOrder++;
+          if(this.source[i+2] === '[')
+            i+=3;
+        }
+        else{
+          this.source.splice(0,i+1);
+          break;
+        }
+      }
+    }
+    let functionCode;
+    if(this.source.shift() === '{'){
+      let openBraces = 0;
+      for(let i=0; i < this.source.length; i++){
+        if(this.source[i] === '{')
+          openBraces++;
+        else if(this.source[i] === '}'){
+          if(openBraces > 0)
+            openBraces--;
           else{
+            functionCode = this.source.slice(0,i);
             this.source.splice(0,i+1);
             break;
           }
         }
       }
-      let functionCode;
-      if(this.source.shift() === '{'){
-        let openBraces = 0;
-        for(let i=0; i < this.source.length; i++){
-          if(this.source[i] === '{')
-            openBraces++;
-          else if(this.source[i] === '}'){
-            if(openBraces > 0)
-              openBraces--;
-            else{
-              functionCode = this.source.slice(0,i);
-              this.source.splice(0,i+1);
-              break;
-            }
-          }
-        }
-      }
-      //else syntaxError;
-      funcStatements = this.readStatements(functionCode);
-      this.functions.push(new Function({
-        name: funcName,
-        args: funcArgs,
-        statements: funcStatements
-      }));
-      this.tables.push(this.symbolTable);
-      this.symbolTable = [];
-      this.declarations = 0;
+    }
+    //else syntaxError;
+    funcStatements = this.readStatements(functionCode);
+    const fn = new Function({
+      name: funcName,
+      args: funcArgs,
+      statements: funcStatements
+    });
+    this.functions.push(fn);
+    this.tables.push(this.symbolTable);
+    this.symbolTable = [];
+    this.declarations = 0;
+  }
+
+  parse() {
+    while(this.source.length > 0){
+      this.makeFunction();
     }
     return this;
   }
