@@ -87,7 +87,7 @@ class ArrayElement extends Node {
       return {
         preInstructions: [
           `mov rcx, DWORD PTR [rbp - ${baseAddress}]`,
-          `mov rdx, DWORD PTR [rbp - ${indexAddress}]`
+          `mov rdx, DWORD PTR [rbp - ${baseAddress}]`
         ],
           resultOperand: 'DWORD PTR [rcx + 4*rdx]'
         }
