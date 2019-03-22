@@ -56,8 +56,8 @@ function groupArray(assignmentLine) {
     let curr = assignmentLine[i];
     if (curr == ']') {
       stk[stk.length-1] += between + curr;
-      stk[stk.length-1] = stk[stk.length-2] + stk[stk.length-1];
-      stk.shift();
+      stk[stk.length-2] = stk[stk.length-2] + stk[stk.length-1];
+      stk.pop();
       between = '';
     } else if (curr == '[') {
       stk.push(curr);
