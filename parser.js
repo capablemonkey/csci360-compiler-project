@@ -91,8 +91,8 @@ function parseOperand(string) {
   }
   let between = splitArray(string);
   if (between.length)// if is array, only supports 1 dimensional arrays
-    return new ArrayElement({name: arr[0], value: arr[1]});
-  else  
+    return new ArrayElement({name: between[0], value: between[1]});
+  else
     return new Operand({type: "variable", value: string});
 }
 
