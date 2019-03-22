@@ -23,26 +23,40 @@ describe("tokenizer", () => {
 });
 
 describe("parser", () => {
+  function testSingleStatement(statement, expected) {
+    const input = `int main() { ${statement} }`;
+    const tokens = tokenize(input);
+    const p = new Parser(tokens);
+    const result = p.parse();
+
+    expect(result.functions.length).to.equal(1);
+
+    const main = result.functions[0];
+    expect(main.statements.length).to.equal(1);
+
+    const parsedStatement = main.statements[0];
+    expect(parsedStatement).to.deep.equal(expected);
+  }
+
   describe("declarations", () => {
-    it("should parse: int foo = 1;", () => {
-      const input = "int main() { int foo = 1; }";
-      const tokens = tokenize(input);
-      const p = new Parser(tokens);
-      const result = p.parse();
-
-      expect(result.functions.length).to.equal(1);
-
-      const main = result.functions[0];
-      expect(main.statements.length).to.equal(1);
-
-      const statement = main.statements[0];
-
+    it("should parse immediate value: int foo = 1;", () => {
+      const input = "int foo = 1;";
       const expected = new Declaration({
         destination: new Operand({type: "variable", value: "foo"}),
         operand: new Operand({type: "immediate", value: "1"})
       });
 
-      expect(statement).to.deep.equal(expected);
+      testSingleStatement(input, expected);
+    });
+
+    it("should parse variable: int foo = bar;", () => {
+      const input = "int foo = bar;";
+      const expected = new Declaration({
+        destination: new Operand({type: "variable", value: "foo"}),
+        operand: new Operand({type: "variable", value: "bar"})
+      });
+
+      testSingleStatement(input, expected);
     });
   });
 });
