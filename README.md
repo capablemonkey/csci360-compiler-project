@@ -6,7 +6,7 @@ Clone this repo and then open `index.html` in your browser.
 
 ## Tests
 
-Tests defined in `test.js` will run when `index.html` loads; test results displayed in the browser's JS console.
+Tests defined in `tests/` are run using Mocha in `test.html`.
 
 ## Contributing
 

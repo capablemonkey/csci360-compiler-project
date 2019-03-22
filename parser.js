@@ -111,7 +111,7 @@ class Parser {
   makeDeclaration(declarationLine){
     //int i = 0
     if(declarationLine[2] === '='){
-      if(Number(declarationLine[3]) != Number.NaN){
+      if(isNumber(declarationLine[3])){
         this.declarations++;
         this.symbolTable[declarationLine[1]] = -(this.declarations*4);
         return new Declaration({
@@ -120,7 +120,7 @@ class Parser {
         });
       }
       // int i = f(a)
-      if (declarationLine.includes('(')) {
+      else if (declarationLine.includes('(')) {
         return new Declaration({
           destination: parseOperand(declarationLine[1]),
           operand: new FunctionCall({

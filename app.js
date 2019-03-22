@@ -1,87 +1,3 @@
-function compile(parseTree) {
-  // sample function:
-  let loopId = 1; // id variables initialized outside all functions
-  let ifId = 1; // value incremented with each new function
-  const sumFunction = new Function({
-    name: 'sum',
-    args: [
-      new Argument({variableName: "num", order: 0, type: "int"})
-    ],
-    statements: [
-      new Declaration({
-        destination: new Operand({type: "variable", value: "sum"}),
-        value: new Operand({type: "immediate", value: 0})
-      }),
-      new ForLoop({
-        id: loopId++,
-        declaration: new Declaration({
-          destination: new Operand({type: "variable", value: "i"}),
-          value: new Operand({type: "immediate", value: 0})
-        }),
-        condition: new BinaryExpression({
-          operator: "<",
-          operand1: new Operand({type: "variable", value: "i"}),
-          operand2: new Operand({type: "variable", value: "num"})
-        }),
-        update: new Assignment({
-          destination: new Operand({type: "variable", value: "i"}),
-          binaryExpression: new BinaryExpression({
-            operator: "+",
-            operand1: new Operand({type: "variable", value: "i"}),
-            operand2: new Operand({type: "immediate", value: "1"})
-          })
-        }),
-        statements: [
-          new Assignment({
-            destination: new Operand({type: "variable", value: "sum"}),
-            binaryExpression: new BinaryExpression({
-              operator: "+",
-              operand1: new Operand({type: "variable", value: "sum"}),
-              operand2: new Operand({type: "variable", value: "i"})
-            })
-          })
-        ],
-      }),
-      new Return({operand: new Operand({type: "variable", value: "sum"})})
-    ]
-  });
-
-  const mainFunction = new Function({
-    args: [],
-    statements: [
-      new ArrayDeclaration({
-        destination: "a",
-        size: 3,
-        values: [1, 2, 3]
-      }),
-      new Assignment({
-        destination: new ArrayElement({name: "a", index: 1}),
-        binaryExpression: new BinaryExpression({
-          operator: "+",
-          operand1: new Operand({type: "immediate", value: "1"}),
-          operand2: new Operand({type: "immediate", value: "2"})
-        })
-      })
-    ]
-  });
-
-  const symbolTableSum = {
-    "num": -4,
-    "sum": -8,
-    "i": -12
-  }
-
-  const symbolTableMain = {
-    "a": -12
-  }
-
-  const assembly = [
-    sumFunction.toAssembly(symbolTableSum),
-    mainFunction.toAssembly(symbolTableMain)
-  ].flat();
-  return assembly;
-}
-
 //Formats the data in an array of 1024 strings into an 8x128 table
 //then inserts the HTML code into element
 function fillTable(table, data){
@@ -115,23 +31,33 @@ function toBinary(sourceCode, fillTable){
   fillTable(table, externalStorage);
 }
 
+function compile(string) {
+  const tokens = tokenize(string);
+  const parser = new Parser(tokens);
+  const parseTree = parser.parse();
+  const functions = parseTree.functions;
+  const tables = parseTree.tables;
+
+  const assembly = functions.
+    map((f, idx) => f.toAssembly(tables[idx])).
+    flat();
+
+  const output = assembly.join('\n');
+
+  return {
+    "parseTree": parseTree,
+    "output": output,
+    "tokens": tokens
+  };
+}
+
 $(document).ready(function() {
   $('.button-compile').click(function(){
     const input = $('.editor-textbox').first().val();
-    const tokens = tokenize(input);
-    toBinary(tokens, fillTable);
-    const parser = new Parser(tokens);
-    const parseTree = parser.parse();
+    const {parseTree, output, tokens} = compile(input);
 
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
-
-    const functions = parseTree.functions;
-    const tables = parseTree.tables;
-
-    const assembly = functions.
-      map((f, idx) => f.toAssembly(tables[idx])).
-      flat();
-
-    $('#assembly').text(assembly.join('\n'));
+    $('#assembly').text(output);
+    toBinary(tokens, fillTable);
   })
 })
