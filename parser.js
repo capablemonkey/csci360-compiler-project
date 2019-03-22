@@ -44,15 +44,59 @@ function isNumber(string) {
   return !nan;
 }
 
+// group array components in an assignment line and return the modified assignment line 
+function groupArray(assignmentLine) {
+  let stk = [];
+  // treat back of array like a stack
+  // go from the front of the assignment line
+  // if we see [ then push to the array
+  // until we see ] we add elements of the line to between 
+  let between = '';
+  for (let i = 0; i < assignmentLine.length; i++) {
+    let curr = assignmentLine[i];
+    if (curr == ']') {
+      stk[stk.length-1] += between + curr;
+      stk[stk.length-2] = stk[stk.length-2] + stk[stk.length-1];
+      stk.pop();
+      between = '';
+    } else if (curr == '[') {
+      stk.push(curr);
+    } else {
+      if (stk.length && stk[stk.length-1] == '[')
+        between += curr;
+      else
+        stk.push(curr);
+    }
+  } return stk;
+}
+
+// Splits an grouped array into its name and index
+function splitArray(string) {
+  let between = '';
+  let stk = [];
+  for (let i = 0; i < string.length; i++) {
+    if (string[i] == '[') {
+      stk.push(between);
+      between = '';
+    } else if (string[i] == ']')
+      stk.push(between);
+    else
+      between += string[i];
+  } return stk;
+}
+
 function parseOperand(string) {
   if (isNumber(string)) {
     return new Operand({type: "immediate", value: Number(string)});
   }
-
-  return new Operand({type: "variable", value: string});
+  let between = splitArray(string);
+  if (between.length)// if is array, only supports 1 dimensional arrays
+    return new ArrayElement({name: between[0], value: between[1], foreign: true});
+  else
+    return new Operand({type: "variable", value: string});
 }
 
-class Parser{
+class Parser {
   constructor(sourceCode){
     this.declarations = 0;
     this.source = sourceCode;
@@ -124,11 +168,12 @@ class Parser{
   }
 
   makeAssignment(assignmentLine){
+    assignmentLine = groupArray(assignmentLine); // if there is an array group it
     //i = 1 || i = x
     if(assignmentLine[1] === '='){
       if(assignmentLine.length === 3){
         return new Assignment({
-          desination: parseOperand(assignmentLine[0]),
+          destination: parseOperand(assignmentLine[0]),
           operand: parseOperand(assignmentLine[2])
         });
       }
@@ -177,6 +222,7 @@ class Parser{
   }
 
   makeIfStatement(condition, statements){
+    condition = groupArray(condition)
     return new If({
       condition: new BinaryExpression({
         operator: condition[1],

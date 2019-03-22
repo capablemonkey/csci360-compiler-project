@@ -68,15 +68,30 @@ class CallerArgument extends Node {
 }
 
 class ArrayElement extends Node {
-  constructor({name, index}) {
+  constructor({name, index, foreign = false}) {
     super();
     this.name = name;
     this.index = index;
+    this.foreign = foreign; // means the array is not in our stack frame as it was passed to our function (cannot compute from rbp)
   }
 
   toAssembly(symbolTable) {
-    const address = (symbolTable[this.name] + this.index * INT_SIZE) * -1;
-    return `DWORD PTR [rbp - ${address}]`;
+    if (!this.foreign) {
+      const address = (symbolTable[this.name] + this.index * INT_SIZE) * -1;
+      return `DWORD PTR [rbp - ${address}]`;
+    } else {
+      // TODO: refactor me so that ArrayElement doesn't return either a list of instructions or an operand
+      // TODO: refactor me so that this.index isn't either a number or a variable name
+      const baseAddress = symbolTable[this.name] * -1;
+      const indexAddress = symbolTable[this.index] * -1;
+      return {
+        preInstructions: [
+          `mov rcx, DWORD PTR [rbp - ${baseAddress}]`,
+          `mov rdx, DWORD PTR [rbp - ${baseAddress}]`
+        ],
+          resultOperand: 'DWORD PTR [rcx + 4*rdx]'
+        }
+    }
   }
 }
 
@@ -143,10 +158,17 @@ class BinaryExpression extends Node {
     const op1 = this.operand1.toAssembly(symbolTable);
     const op2 = this.operand2.toAssembly(symbolTable);
 
-    const instructions = [
-      `mov eax, ${op1}`,
-      `${operatorToInstruction[this.operator]} eax, ${op2}`
+    let instructions = [
+      `mov eax, ${op1}`
     ];
+
+    // TODO: refactor this preInstruction business
+    if (op2.preInstructions) {
+      instructions = instructions.concat(op2.preInstructions);
+      instructions.push(`${operatorToInstruction[this.operator]} eax, ${op2.resultOperand}`)
+    } else {
+      instructions.push(`${operatorToInstruction[this.operator]} eax, ${op2}`)
+    }
 
     return instructions;
   }
@@ -178,6 +200,12 @@ class Assignment extends Node {
           `mov eax, ${this.operand.toAssembly(symbolTable)}`,
           `mov ${destination}, eax`
         ];
+    } else if (this.operand instanceof ArrayElement) {
+      const arr = this.operand.toAssembly(symbolTable);
+      return [
+        arr.preInstructions,
+        `mov ${destination}, ${arr.resultOperand}`
+      ].flat();
     } else {
       throw `Invalid operand for assignment: ${this.operand}`;
     }
@@ -385,7 +413,7 @@ class ArrayDeclaration extends Node {
     const baseAddress = symbolTable[this.destination];
     let instructions = this.values.map((value, index) => {
        const address = (baseAddress + index * INT_SIZE) * -1;
-       const element = new ArrayElement({name: this.destination, "index": index}).toAssembly(symbolTable);
+       const element = new ArrayElement({name: this.destination, "index": index, foreign: false}).toAssembly(symbolTable);
        return `mov ${element}, ${value}`
     });
     return instructions;
