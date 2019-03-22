@@ -92,9 +92,9 @@ class Argument extends Node {
     // in order that they are used; e.g. if there are 2 arguments, then edi and esi
     // are used
     const argumentRegisters = ["edi", "esi", "edx", "ecx"];
-    const d = new Declaration({
+    const d = new Assignment({
       destination: new Operand({type: "variable", value: this.variableName}),
-      value: new Operand({type: "register", value: argumentRegisters[this.order]})
+      operand: new Operand({type: "register", value: argumentRegisters[this.order]})
     });
     return d.toAssembly(symbolTable);
   }
@@ -108,10 +108,11 @@ class Declaration extends Node {
   }
 
   toAssembly(symbolTable) {
-    return (new Assignment({
+    const a = new Assignment({
       destination: this.destination,
       operand: this.operand
-    })).toAssembly(symbolTable);
+    });
+    return a.toAssembly(symbolTable);
   }
 }
 
@@ -168,16 +169,17 @@ class Assignment extends Node {
         `mov ${destination}, eax`
       ].flat();
       return instructions;
-    } else if(this.operand instanceof Operand) {
-      if(this.operand.type === 'variable'){
-        let instructions = [
+    } else if (this.operand instanceof Operand) {
+        if(this.operand.type === 'immediate' || this.operand.type === 'register') {
+          return `mov ${destination}, ${this.operand.toAssembly(symbolTable)}`;
+        }
+
+        return [
           `mov eax, ${this.operand.toAssembly(symbolTable)}`,
           `mov ${destination}, eax`
         ];
-        return instructions;
-      } else if(this.operand.type === 'immediate') {
-        return `mov ${destination}, ${this.operand.toAssembly(symbolTable)}`;
-      }
+    } else {
+      throw `Invalid operand for assignment: ${this.operand}`;
     }
   }
 }
