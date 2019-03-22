@@ -156,28 +156,27 @@ class Assignment extends Node {
   constructor({destination, operand}) {
     super();
     this.destination = destination;
-    this.operand = operand;
+    this.operand = operand; // TODO: rename this to something like expression
   }
 
   toAssembly(symbolTable) {
     const destination = this.destination.toAssembly(symbolTable);
-    if(this.operand instanceof BinaryExpression){
+
+    if(this.operand instanceof BinaryExpression || this.operand instanceof FunctionCall){
       // binaryExpression stores result in eax; so move eax into destination variable
       let instructions = [
         this.operand.toAssembly(symbolTable),
         `mov ${destination}, eax`
       ].flat();
       return instructions;
-    }
-    else if(this.operand instanceof Operand){
+    } else if(this.operand instanceof Operand) {
       if(this.operand.type === 'variable'){
         let instructions = [
           `mov eax, ${this.operand.toAssembly(symbolTable)}`,
           `mov ${destination}, eax`
         ];
         return instructions;
-      }
-      else if(this.operand.type === 'immediate'){
+      } else if(this.operand.type === 'immediate') {
         return `mov ${destination}, ${this.operand.toAssembly(symbolTable)}`;
       }
     }
@@ -292,7 +291,6 @@ class FunctionCall extends Node {
     super();
     this.functionName = functionName;
     this.args = args;
-    this.order = 0; // the argumentRegister index we are using
   }
   toAssembly(symbolTable) {
     // load arguments from memory or immediate to registers
@@ -323,6 +321,7 @@ class Function extends Node {
     }
 
     let instructions = [
+      `${this.name}():`,
       "push rbp",
       "mov rbp, rsp"
     ]

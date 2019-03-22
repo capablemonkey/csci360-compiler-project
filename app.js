@@ -82,12 +82,6 @@ function compile(parseTree) {
   return assembly;
 }
 
-function parse(sourceCode) {
-  const parser = new Parser(sourceCode);
-  const parseTree = parser.makeFunction();
-  return parseTree;
-}
-
 //Formats the data in an array of 1024 strings into an 8x128 table
 //then inserts the HTML code into element
 function fillTable(table, data){
@@ -126,7 +120,8 @@ $(document).ready(function() {
     const input = $('.editor-textbox').first().val();
     const tokens = tokenize(input);
     toBinary(tokens, fillTable);
-    const parseTree = parse(tokens);
+    const parser = new Parser(tokens);
+    const parseTree = parser.parse();
 
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
 
