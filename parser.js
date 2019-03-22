@@ -38,6 +38,18 @@ function tokenize(sourceCode){
   return tokensArray;
 }
 
+function parseArrayElements(string){
+  for(let i=0; i<string.length; i++){
+    if(string[i+1] === '['){
+      const arr = new ArrayElement({
+        name: string[i],
+        index: string[i+2]
+      });
+      string.splice(i,i+4, arr);
+    }
+  }
+}
+
 function isNumber(string) {
   if (string.length == 0) { return false; }
   const nan = isNaN(Number(string))
@@ -48,7 +60,9 @@ function parseOperand(string) {
   if (isNumber(string)) {
     return new Operand({type: "immediate", value: Number(string)});
   }
-
+  else if(string instanceof ArrayElement)
+    return new Operand({type: "ArrayElement", value: string});
+  else
   return new Operand({type: "variable", value: string});
 }
 
@@ -96,7 +110,7 @@ class Parser{
         let symbolName = `${declarationLine[1]}[${i}]`;;
         this.symbolTable[symbolName] = -((this.declarations-i)*4);
       }
-      return ArrayDeclaration({
+      return new ArrayDeclaration({
         destination: declarationLine[1],
         size: arrayValues.length,
         values: arrayValues
@@ -105,6 +119,7 @@ class Parser{
   }
 
   makeAssignment(assignmentLine){
+    parseArrayElements(assignmentLine);
     //i = 1 || i = x
     if(assignmentLine[1] === '='){
       if(assignmentLine.length === 3){
@@ -277,6 +292,7 @@ class Parser{
           break;
         }
         case 'return':{
+          parseArrayElements(source);
           instruction.push(new Return({operand: parseOperand(source[1])}));
           source.splice(0,3);
           break;

@@ -27,6 +27,8 @@ class Operand extends Node {
         return this.value;
       case 'immediate':
         return this.value;
+      case 'ArrayElement':
+        return this.value.toAssembly(symbolTable);
       default:
         throw `Invalid operand type: ${this.type}`;
     }
@@ -38,9 +40,9 @@ class CallerArgument extends Node {
     /* value: the value of the argument
        type: variable || immediate || address
        order: number the parameter number this argument is for the function
-       dataType: the dataType of the argument: int, int*, float etc 
+       dataType: the dataType of the argument: int, int*, float etc
        dataType is not used here but it helps to have for FunctionCall class
-    */ 
+    */
     super();
     this.value = value;
     this.type = type;
@@ -56,10 +58,10 @@ class CallerArgument extends Node {
       case 'variable':
         address = symbolTable[this.value] * -1;
         return [`mov eax, DWORD PTR [rbp - ${address}]`, `mov ${argumentRegister}, eax`];
-      case 'immediate': 
+      case 'immediate':
         return `mov ${argumentRegister} ${this.value}`;
       case 'address': // handles references & pointers
-        address = symbolTable[this.value] * -1;  
+        address = symbolTable[this.value] * -1;
         return [`lea rax, [rbp - ${address}]`, `mov ${argumentRegister}, rax`];
       default:
         throw `Invalid argument type: ${this.type}`;
@@ -75,7 +77,7 @@ class ArrayElement extends Node {
   }
 
   toAssembly(symbolTable) {
-    const address = (symbolTable[this.name] + this.index * INT_SIZE) * -1;
+    const address = (symbolTable[this.name+'[0]'] + this.index * INT_SIZE) * -1;
     return `DWORD PTR [rbp - ${address}]`;
   }
 }
@@ -170,7 +172,7 @@ class Assignment extends Node {
       return instructions;
     }
     else if(this.operand instanceof Operand){
-      if(this.operand.type === 'variable'){
+      if(this.operand.type === 'variable' || this.operand.type === 'arrayElement'){
         let instructions = [
           `mov eax, ${this.operand.toAssembly(symbolTable)}`,
           `mov ${destination}, eax`

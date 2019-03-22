@@ -1,6 +1,6 @@
 function compile(parseTree) {
   // sample function:
-  let loopId = 1; // id variables initialized outside all functions 
+  let loopId = 1; // id variables initialized outside all functions
   let ifId = 1; // value incremented with each new function
   const sumFunction = new Function({
     name: 'sum',
