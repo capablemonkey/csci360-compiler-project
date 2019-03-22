@@ -100,19 +100,18 @@ class Argument extends Node {
   }
 }
 
-// takes a destination Operand and sets that equal to the value Operand
 class Declaration extends Node {
-  constructor({destination, value}) {
+  constructor({destination, operand}) {
     super();
     this.destination = destination;
-    this.value = value;
+    this.operand = operand;
   }
 
   toAssembly(symbolTable) {
-    // TODO: should be able to support expression
-    const dest = this.destination.toAssembly(symbolTable);
-    const val = this.value.toAssembly(symbolTable);
-    return `mov ${dest}, ${val}`;
+    return (new Assignment({
+      destination: this.destination,
+      operand: this.operand
+    })).toAssembly(symbolTable);
   }
 }
 
@@ -323,7 +322,8 @@ class Function extends Node {
     let instructions = [
       `${this.name}():`,
       "push rbp",
-      "mov rbp, rsp"
+      "mov rbp, rsp",
+      this.allocateMemory()
     ]
 
     // handle arguments (load them from registers)
@@ -337,6 +337,28 @@ class Function extends Node {
     instructions.push("pop rbp");
     instructions.push("ret");
     return instructions;
+  }
+
+  allocateMemory() {
+    const argBytes = this.args.length * 4; // number of args * 4 bytes per arg
+
+    // recursively counts declarations in function statements
+    const countDeclarations = (statements) => {
+      let count = 0;
+      statements.forEach((s) => {
+        if (s instanceof Declaration) { count += 1; }
+        if (s instanceof ArrayDeclaration) { count += s.size; }
+        if (s instanceof ForLoop || s instanceof If) {
+          count += countDeclarations(s.statements)
+        }
+      });
+
+      return count;
+    }
+
+    const declarationCount = countDeclarations(this.statements);
+    const totalBytes = argBytes + declarationCount * 4;
+    return `sub rsp, ${totalBytes}`;
   }
 }
 
