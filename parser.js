@@ -70,14 +70,14 @@ class Parser{
       if(Number(declarationLine[3]) != Number.NaN){
         this.declarations++;
         this.symbolTable[declarationLine[1]] = -(this.declarations*4);
-        return new Assignment({
+        return new Declaration({
           destination: new Operand({type: "variable", value: declarationLine[1]}),
           operand: new Operand({type: "immediate", value: declarationLine[3]})
         });
       }
       // int i = f(a)
       if (declarationLine.includes('(')) {
-        return new Assignment({
+        return new Declaration({
           destination: parseOperand(declarationLine[1]),
           operand: new FunctionCall({
             functionName: declarationLine[3],
@@ -96,7 +96,7 @@ class Parser{
       else{
         this.declarations++;
         this.symbolTable[declarationLine[1]] = -(this.declarations*4);
-        return new Assignment({
+        return new Declaration({
           destination: new Operand({type: "variable", value: declarationLine[1]}),
           operand: new Operand({type: "variable", value: declarationLine[3]})
         });

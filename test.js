@@ -6,7 +6,7 @@ const TESTS = {
   "declare variable with immediate value": function() {
     const d = new Declaration({
       destination: new Operand({type: "variable", value: "foo"}),
-      value: new Operand({type: "immediate", value: 5})
+      operand: new Operand({type: "immediate", value: 5})
     });
     const symbolTable = {
       "foo": -4
