@@ -44,7 +44,7 @@ function toBinaryOperand(operand) {
     isNegative = true;
     number = number.substring(1);
   }
-  let number = Number(number);
+  number = Number(number);
   number = number.toString(2);
   if(operand.type === 'memory')
     number = number.padStart(8,'0');
@@ -71,7 +71,7 @@ class ASMInstruction {
     this.operand2 = operand2;
   }
 
-  toMachineCode() {
+  toMachineCode(LabelTable) {
     let machineCode = '';
     switch(this.op){
       case 'mov':{
@@ -189,38 +189,38 @@ class ASMInstruction {
         break;
       }
       case 'jmp':{
-        const offset = toBinaryOperand(this.operand1);
-        machineCode += '11101001' + offset;
+        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        machineCode += '11101001' + instAddress;
         break;
       }
       case 'jg':{
-        const offset = toBinaryOperand(this.operand1);
-        machineCode += '10001111' + offset;
+        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        machineCode += '10001111' + instAddress;
         break;
       }
       case 'jl':{
-        const offset = toBinaryOperand(this.operand1);
-        machineCode += '10001100' + offset;
+        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        machineCode += '10001100' + instAddress;
         break;
       }
       case 'je':{
-        const offset = toBinaryOperand(this.operand1);
-        machineCode += '10000100' + offset;
+        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        machineCode += '10000100' + instAddress;
         break;
       }
       case 'jge':{
-        const offset = toBinaryOperand(this.operand1);
-        machineCode += '10001101' + offset;
+        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        machineCode += '10001101' + instAddress;
         break;
       }
       case 'jle':{
-        const offset = toBinaryOperand(this.operand1);
-        machineCode += '10001110' + offset;
+        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        machineCode += '10001110' + instAddress;
         break;
       }
       case 'jne':{
-        const offset = toBinaryOperand(this.operand1);
-        machineCode += '10000101' + offset;
+        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        machineCode += '10000101' + instAddress;
         break;
       }
       case 'push':{
@@ -239,11 +239,42 @@ class ASMInstruction {
         machineCode += '1000110100001111' + register + memory;
         break;
       }
+      case 'call':{
+        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        machineCode += '11101000' + instAddress;
+        break;
+      }
       case 'ret':{
         machineCode += '11000010000000000000000000000000';
+        break;
+      }
+      //Label
+      default:{
+        //Do nothing
         break;
       }
     }
     return machineCode;
   }
+}
+
+function translateInstructions(instArray) {
+  let Labels = {};
+  for(let i=0; i<instArray.length; i++) {
+    if(instArray[i].op === 'label') {
+      Labels[instArray[i].operand1] = instArray[i].operand2;
+    }
+  }
+  let externalMachineCode = [];
+  for(let i=0; i<instArray.length; i++) {
+    let fullInstruction = instArray[i].toMachineCode(Labels);
+    externalMachineCode.push(fullInstruction.slice(0,8));
+    externalMachineCode.push(fullInstruction.slice(8,16));
+    externalMachineCode.push(fullInstruction.slice(16,24));
+    externalMachineCode.push(fullInstruction.slice(24,32));
+  }
+  while(externalMachineCode.length < 1024) {
+    externalMachineCode.push('00000000');
+  }
+  return externalMachineCode;
 }
