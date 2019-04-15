@@ -44,6 +44,13 @@ function compile(string) {
 
   const output = assembly.join('\n');
 
+  // cache testing
+  const cache = new Cache({nway: 2, size: 4, k: 2, memory: null});
+  cache.cache[0][0][0] = '11101010';
+  console.log(cache.isCacheHit('11101010'))
+  cache.printSnapshot();
+
+
   return {
     "parseTree": parseTree,
     "output": output,
