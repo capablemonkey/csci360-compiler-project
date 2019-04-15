@@ -161,48 +161,30 @@ class CPU {
   }
 
   movImmediate(instruction) {
-    const match = this.checkMatch(/^11000110(?<register>\d{8})(?<immediate>\d{16})$/, instruction);
-
-    if (match) {
-      const registerName = BINARY_TO_REGISTER[match["register"]];
-      const immediateInt = parseInt(match["immediate"], 2);
+    return this.checkMatch(/^11000110(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
+      const registerName = BINARY_TO_REGISTER[values["register"]];
+      const immediateInt = parseInt(values["immediate"], 2);
 
       this.registers[registerName] = immediateInt;
-
-      return true;
-    }
-
-    return false;
+    });
   }
 
   addImmediate(instruction) {
-    const match = this.checkMatch(/^00000101(?<register>\d{8})(?<immediate>\d{16})$/, instruction);
-
-    if (match) {
-      const registerName = BINARY_TO_REGISTER[match["register"]];
-      const immediateInt = parseInt(match["immediate"], 2);
+    return this.checkMatch(/^00000101(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
+      const registerName = BINARY_TO_REGISTER[values["register"]];
+      const immediateInt = parseInt(values["immediate"], 2);
 
       this.registers[registerName] += immediateInt;
-
-      return true;
-    }
-
-    return false;
+    });
   }
 
   addRegisters(instruction) {
-    const match = this.checkMatch(/^0000000100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction);
-
-    if (match) {
-      const registerNameA = BINARY_TO_REGISTER[match["registerA"]];
-      const registerNameB = BINARY_TO_REGISTER[match["registerB"]];
+    return this.checkMatch(/^0000000100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction, (values) => {
+      const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
+      const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
 
       this.registers[registerNameA] += this.registers[registerNameB];
-
-      return true;
-    }
-
-    return false;
+    });
   }
 
   // TODO: test me
@@ -219,11 +201,12 @@ class CPU {
     };
   }
 
-  checkMatch(regex, instruction) {
+  checkMatch(regex, instruction, fn) {
     let match = regex.exec(instruction);
 
     if (match) {
-      return match["groups"];
+      fn.apply(this, [match["groups"]]);
+      return true;
     }
 
     return false;
