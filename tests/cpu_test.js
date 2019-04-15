@@ -25,7 +25,7 @@ describe("cpu", () => {
 
         const cpu = new CPU();
 
-        cpu.movImmediate("ebx", 7);
+        cpu.registers["ebx"] = 7;
         cpu.execute(instruction);
 
         expect(cpu.getState()["registers"]["ebx"]).to.equal(10);

@@ -144,21 +144,49 @@ class CPU {
   // instruction is a 32 bit instruction represented as a string of "1"s and "0"s
   // e.g. "01000000100000000010000000000000"
   execute(instruction) {
-    // dispatch based on opcode:
-    const re = /^11000110(?<register>\d{8})(?<immediate>\d{16})$/;
-    let match = re.exec(instruction);
+    const operations = [
+      this.movImmediate,
+      this.addImmediate
+    ];
 
-    if (match) {
-      const register = BINARY_TO_REGISTER[match["groups"]["register"]];
-      const immediate = parseInt(match["groups"]["immediate"], 2);
-      this.movImmediate(register, immediate);
+    // try all of the operations until one pattern is found:
+    const found = operations.some((op) => op.apply(this, [instruction]));
+
+    if (!found) {
+      throw new Error(`Encountered unknown instruction: ${instruction}`);
     }
+
+    return true;
   }
 
-  // registerName: string e.g. "eax"
-  // immediateInt: int e.g. 1337
-  movImmediate(registerName, immediateInt) {
-    this.registers[registerName] = immediateInt;
+  movImmediate(instruction) {
+    const match = this.checkMatch(/^11000110(?<register>\d{8})(?<immediate>\d{16})$/, instruction);
+
+    if (match) {
+      const registerName = BINARY_TO_REGISTER[match["register"]];
+      const immediateInt = parseInt(match["immediate"], 2);
+
+      this.registers[registerName] = immediateInt;
+
+      return true;
+    }
+
+    return false;
+  }
+
+  addImmediate(instruction) {
+    const match = this.checkMatch(/^00000101(?<register>\d{8})(?<immediate>\d{16})$/, instruction);
+
+    if (match) {
+      const registerName = BINARY_TO_REGISTER[match["register"]];
+      const immediateInt = parseInt(match["immediate"], 2);
+
+      this.registers[registerName] += immediateInt;
+
+      return true;
+    }
+
+    return false;
   }
 
   // TODO: test me
@@ -173,5 +201,15 @@ class CPU {
       "registers": this.registers,
       "stack": this.stack
     };
+  }
+
+  checkMatch(regex, instruction) {
+    let match = regex.exec(instruction);
+
+    if (match) {
+      return match["groups"];
+    }
+
+    return false;
   }
 }
