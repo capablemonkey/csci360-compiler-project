@@ -34,7 +34,17 @@ describe("cpu", () => {
 
     describe("add registers", () => {
       it("can add eax and ebx", () => {
+        const opcode = "0000000100000000";
+        const registerA = "00000000";
+        const registerB = "00000001";
+        const instruction = `${opcode}${registerA}${registerB}`;
 
+        const cpu = new CPU();
+        cpu.registers["eax"] = 100;
+        cpu.registers["ebx"] = 36;
+        cpu.execute(instruction);
+
+        expect(cpu.getState()["registers"]["eax"]).to.equal(136);
       });
     })
   });

@@ -146,7 +146,8 @@ class CPU {
   execute(instruction) {
     const operations = [
       this.movImmediate,
-      this.addImmediate
+      this.addImmediate,
+      this.addRegisters
     ];
 
     // try all of the operations until one pattern is found:
@@ -182,6 +183,21 @@ class CPU {
       const immediateInt = parseInt(match["immediate"], 2);
 
       this.registers[registerName] += immediateInt;
+
+      return true;
+    }
+
+    return false;
+  }
+
+  addRegisters(instruction) {
+    const match = this.checkMatch(/^0000000100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction);
+
+    if (match) {
+      const registerNameA = BINARY_TO_REGISTER[match["registerA"]];
+      const registerNameB = BINARY_TO_REGISTER[match["registerB"]];
+
+      this.registers[registerNameA] += this.registers[registerNameB];
 
       return true;
     }
