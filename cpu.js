@@ -95,7 +95,7 @@ class Memory {
     this.addressToByte[address] = word.slice(0, 8);
     this.addressToByte[address + 1] = word.slice(8, 16);
     this.addressToByte[address + 2] = word.slice(16, 24);
-    this.addressToByte[address + 1] = word.slice(24, 32);
+    this.addressToByte[address + 3] = word.slice(24, 32);
   }
 }
 
@@ -111,9 +111,9 @@ const BINARY_TO_REGISTER = {
   "00001000": "pc"
 }
 
-// integerToWord(1337) => "0000010100111001"
-function integerToWord(integer) {
-  return integer.toString(2).padStart(16, "0");
+// intToNBytes(1337, 2) => "0000010100111001"
+function intToNBytes(integer, n) {
+  return integer.toString(2).padStart(n * 8, "0");
 }
 
 class CPU {
@@ -147,7 +147,8 @@ class CPU {
     const operations = [
       this.movImmediate,
       this.addImmediate,
-      this.addRegisters
+      this.addRegisters,
+      this.movRegisterToMemory
     ];
 
     // try all of the operations until one pattern is found:
@@ -166,6 +167,16 @@ class CPU {
       const immediateInt = parseInt(values["immediate"], 2);
 
       this.registers[registerName] = immediateInt;
+    });
+  }
+
+  movRegisterToMemory(instruction) {
+    return this.checkMatch(/^1000100111110000(?<address>\d{8})(?<register>\d{8})$/, instruction, (values) => {
+      const registerName = BINARY_TO_REGISTER[values["register"]];
+      const address = parseInt(values["address"], 2);
+
+      const value = this.registers[registerName];
+      this.memory.setWord(address, intToNBytes(value, 4));
     });
   }
 
