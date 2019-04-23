@@ -56,6 +56,7 @@ class Cache {
             const {setIndex, offset} = this.lruReplacement({ index });
             this.cache[setIndex][index][offset].data = `${1}${tag}${data}`;
         }
+        this.updateTimes({ setIndex: setIndex, index: index, offset: offset });
         if (memwrite) this.memory.set(address, data); // write through //
     }
 
