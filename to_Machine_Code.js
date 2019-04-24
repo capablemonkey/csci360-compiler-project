@@ -1,12 +1,12 @@
 const Registers = {
-  eax: '00000001',
-  ecx: '00000010',
-  edx: '00000011',
-  ebx: '00000100',
-  rsp: '00000101',
-  rbp: '00000110',
-  esi: '00000111',
-  edi: '00001000'
+  eax: '00000001', rax: '00000001',
+  ecx: '00000010', rcx: '00000010',
+  edx: '00000011', rdx: '00000011',
+  ebx: '00000100', rbx: '00000100',
+  esp: '00000101', rsp: '00000101',
+  ebp: '00000110', rbp: '00000110',
+  esi: '00000111', rsi: '00000111',
+  edi: '00001000', rdi: '00001000',
 }
 
 function immediateOperand(value) {
@@ -24,9 +24,22 @@ function registerOperand(value) {
 }
 
 function memoryOperand(value) {
-  return {
-    type: 'memory',
-    value: value //Store as a string in form '-123'
+  if(Number(value) != Number.NaN){
+    return {
+      type: 'memory',
+      value: value //Store as a string in form '-123' or obj with 2 regs
+    }
+  }
+  else{
+    const reg1 = value.substring(0,3);
+    const reg2 = value.substring(value.length-3,3);
+    return {
+      type: 'memory',
+      value: {
+        first: reg1,
+        second: reg2
+      }
+    }
   }
 }
 
@@ -87,9 +100,17 @@ class ASMInstruction {
               }
               //mov register, memory
               case 'memory':{
-                const memory = toBinaryOperand(this.operand2);
-                machineCode += '1000101100001111' + register1 + memory;
-                break;
+                if(typeof this.operand2 === 'string'){
+                  const memory = toBinaryOperand(this.operand2);
+                  machineCode += '1000101100001111' + register1 + memory;
+                  break;
+                }
+                else{
+                  const regAddr1 = Registers[this.operand2.value.first].substring(4);
+                  const regAddr2 = Registers[this.operand2.value.second];
+                  machineCode += '100010111111' + regAddr1 + register1 + regAddr2;
+                  break;
+                }
               }
               //mov register, immediate
               case 'immediate':{
@@ -175,9 +196,17 @@ class ASMInstruction {
           }
           //cmp register, memory
           case 'memory':{
-            const memory = toBinaryOperand(this.operand2);
-            machineCode += '0011101100001111' + register1 + memory;
-            break;
+            if(typeof this.operand2 === 'string'){
+              const memory = toBinaryOperand(this.operand2);
+              machineCode += '0011101100001111' + register1 + memory;
+              break;
+            }
+            else{
+              const regAddr1 = Registers[this.operand2.value.first].substring(4);
+              const regAddr2 = Registers[this.operand2.value.second];
+              machineCode += '001110111111' + regAddr1 + register1 + regAddr2;
+              break;
+            }
           }
           //cmp register, immediate
           case 'immediate':{
