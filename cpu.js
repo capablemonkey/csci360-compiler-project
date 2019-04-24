@@ -145,10 +145,12 @@ class CPU {
   // e.g. "01000000100000000010000000000000"
   execute(instruction) {
     const operations = [
-      this.movImmediate,
+      this.movRegisterToRegister,
+      this.movImmediateToRegister,
+      this.movImmediateToMemory,
+      this.movRegisterToMemory,
       this.addImmediate,
       this.addRegisters,
-      this.movRegisterToMemory
     ];
 
     // try all of the operations until one pattern is found:
@@ -161,7 +163,16 @@ class CPU {
     return true;
   }
 
-  movImmediate(instruction) {
+  movRegisterToRegister(instruction) {
+    return this.checkMatch(/^1000100100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction, (values) => {
+      const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
+      const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
+
+      this.registers[registerNameA] = this.registers[registerNameB];
+    });
+  }
+
+  movImmediateToRegister(instruction) {
     return this.checkMatch(/^11000110(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const immediateInt = parseInt(values["immediate"], 2);
@@ -170,10 +181,22 @@ class CPU {
     });
   }
 
+  //movMemoryToRegister(instruction) {}
+  //movArrayElementToRegister(instruction) {}
+
+  movImmediateToMemory(instruction) {
+    return this.checkMatch(/^11000111(?<address>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
+      const address = this.registers[rbp] + parseInt(values["address"], 2);
+      const immediateBinary = values["immediate"].padStart(32,0);
+
+      this.memory.setWord(address, immediateBinary);
+    });
+  }
+
   movRegisterToMemory(instruction) {
     return this.checkMatch(/^1000100111110000(?<address>\d{8})(?<register>\d{8})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
-      const address = parseInt(values["address"], 2);
+      const address = this.registers[rbp] + parseInt(values["address"], 2);
 
       const value = this.registers[registerName];
       this.memory.setWord(address, intToNBytes(value, 4));
@@ -198,6 +221,14 @@ class CPU {
     });
   }
 
+  //subImmediate(instruction) {}
+  //subRegister(instruction) {}
+  //cmpRegister(instruction) {}
+  //cmpImmediate(instruction) {}
+  //cmpMemory(instruction) {}
+  //cmpArrayElement(instruction) {}
+  //jmp(instruction) {}
+  //jumpConditional(instruction) {} //First 4 bits same, next 4 are condition
   // TODO: test me
   step() {
     this.registers["pc"] += 4;
