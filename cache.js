@@ -41,12 +41,11 @@ class Cache {
         // pull from memory
         const data = this.memory.get(address);
         this.write({address: address, data: data, memwrite: false}); // no memwrite
-
         return data;
     }
 
     // writes a piece of data from an address to the cache
-    write({address, data, memwrite }) {
+    write({address, data, memwrite = true }) {
         const { index, offset, tag } = this.extractBits(address);
         const setIndex = this.isCacheHit(address);
         
