@@ -186,7 +186,7 @@ class CPU {
 
   movImmediateToMemory(instruction) {
     return this.checkMatch(/^11000111(?<address>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
-      const address = this.registers[rbp] + parseInt(values["address"], 2);
+      const address = this.registers["rbp"] + parseInt(values["address"], 2);
       const immediateBinary = values["immediate"].padStart(32,0);
 
       this.memory.setWord(address, immediateBinary);
@@ -196,7 +196,7 @@ class CPU {
   movRegisterToMemory(instruction) {
     return this.checkMatch(/^1000100111110000(?<address>\d{8})(?<register>\d{8})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
-      const address = this.registers[rbp] + parseInt(values["address"], 2);
+      const address = this.registers["rbp"] + parseInt(values["address"], 2);
 
       const value = this.registers[registerName];
       this.memory.setDword(address, intToNBytes(value, 4));
