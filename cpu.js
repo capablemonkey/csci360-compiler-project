@@ -79,8 +79,8 @@ class Memory {
   }
 
   // address is an integer
-  // word is 4 bytes represented as a string of 1s and 0s
-  getWord(address) {
+  // Dword is 4 bytes represented as a string of 1s and 0s
+  getDword(address) {
     const word = [
       this.addressToByte[address],
       this.addressToByte[address + 1],
@@ -91,7 +91,7 @@ class Memory {
     return word;
   }
 
-  setWord(address, word) {
+  setDword(address, word) {
     this.addressToByte[address] = word.slice(0, 8);
     this.addressToByte[address + 1] = word.slice(8, 16);
     this.addressToByte[address + 2] = word.slice(16, 24);
@@ -176,7 +176,7 @@ class CPU {
       const address = parseInt(values["address"], 2);
 
       const value = this.registers[registerName];
-      this.memory.setWord(address, intToNBytes(value, 4));
+      this.memory.setDword(address, intToNBytes(value, 4));
     });
   }
 
@@ -201,7 +201,7 @@ class CPU {
   // TODO: test me
   step() {
     this.registers["pc"] += 4;
-    nextInstruction = this.memory.getWord(this.registers["pc"]);
+    nextInstruction = this.memory.getDword(this.registers["pc"]);
     execute(nextInstruction);
   }
 
