@@ -25,7 +25,7 @@ describe("cpu", () => {
         cpu.registers["eax"] = 1337;
         cpu.execute(instruction);
 
-        expect(cpu.memory.getWord(222)).to.equal("00000000000000000000010100111001")
+        expect(cpu.memory.getDword(222)).to.equal("00000000000000000000010100111001")
       });
     });
   });
