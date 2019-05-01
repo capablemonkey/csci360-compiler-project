@@ -221,8 +221,19 @@ class CPU {
     });
   }
 
-  //subImmediate(instruction) {}
   //subRegister(instruction) {}
+  // sub register, register
+  // [0010 1001][0000 0000][xxxx xxxx][xxxx xxxx]
+  subRegisters(instruction) {
+    return this.checkMatch(/^0010100100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction, (values) => {
+      const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
+      const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
+      this.registers[registerNameA] -= this.registers[registerNameB];
+    });
+  }
+
+  //subImmediate(instruction) {}
+  
   //cmpRegister(instruction) {}
   //cmpImmediate(instruction) {}
   //cmpMemory(instruction) {}
