@@ -233,7 +233,15 @@ class CPU {
   }
 
   //subImmediate(instruction) {}
-  
+  // sub register, immediate
+  // [0010 1101][xxxx xxxx][zzzz zzzz zzzz zzzz]
+  subImmediate(instruction) {
+    return this.checkMatch(/^00101101(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
+      const registerName = BINARY_TO_REGISTER[values["register"]];
+      const immediateInt = parseInt(values["immediate"], 2);
+      this.registers[registerName] -= immediateInt;
+    });
+  }
   //cmpRegister(instruction) {}
   //cmpImmediate(instruction) {}
   //cmpMemory(instruction) {}
