@@ -17,6 +17,8 @@ class Cache {
         this.k = k;
         this.nway = nway;
         this.bits = bits;
+        this.missData = { misses: 0, total: 0 };
+        this.replacementData = { replcements: 0, total: 0 };
         this.cache = Array.from({length: nway},
             () => Array.from({length: size},
                 () => Array.from({length: k},
@@ -26,16 +28,18 @@ class Cache {
                             time: 0
                         }
                     }))); // 3D array for n-way set association
-        this.printSnapshot();
+        //this.printSnapshot();
         this.memory = memory;
     }
 
-    read({address: address}) {
+    read({ address }) {
         const setIndex = this.isCacheHit(address);
         if (setIndex >= 0) { // if it was found
-            const { index, offset } = this.extractBits(address);
-            const data = this.cache[setIndex][index][offset].data;
+            const { index, offset, tag } = this.extractBits(address);
+            // get the data minus the valid bit and the tags length
+            const data = this.cache[setIndex][index][offset].data.substr(1+tag.length);
             this.updateTimes({ setIndex: setIndex, index: index, offset: offset });
+            this.recordAccess();
             return data; // should return the data not the address
         }
         // pull from memory
@@ -45,14 +49,16 @@ class Cache {
     }
 
     // writes a piece of data from an address to the cache
-    write({address, data, memwrite = true }) {
+    write({  address, data, memwrite = true }) {
         const { index, offset, tag } = this.extractBits(address);
         const setIndex = this.isCacheHit(address);
         
         if (setIndex >= 0) { // already in the cache, update it there
             this.cache[setIndex][index][offset].data = `${1}${tag}${data}`;
+            this.recordAccess();
         } else { // not in the cache, we need to bring it into the cache 
-            const {setIndex, offset} = this.lruReplacement({ index });
+            this.recordMiss();
+            const {setIndex, offset} = this.lruReplacement({ address: address });
             this.cache[setIndex][index][offset].data = `${1}${tag}${data}`;
         }
         this.updateTimes({ setIndex: setIndex, index: index, offset: offset });
@@ -64,9 +70,11 @@ class Cache {
         const { index, offset, tag, tagBits } = this.extractBits(address);
         for (let i = 0; i < this.cache.length; i++) {
             // start substring @ 1 to skip the valid bit, tagBits+1 to get whole tag
+            const data = this.cache[i][index][offset].data;
             const cacheTag = this.cache[i][index][offset].data.substring(1, tagBits+1);
-            if (tag == cacheTag) return i
-        } return -1;
+            if (data[0] == '1' && tag == cacheTag) return i
+        }
+         return -1;
     }
 
     // Extracts info from bits given an address 
@@ -83,11 +91,10 @@ class Cache {
     getValidBit(address) {
         const index = this.getIndex(address);
         const offset = this.getOffset(address);
-        
     }
 
     getOffset(address) {
-        let offsetBinary = address.substring(address.length- (Math.log(this.k) / Math.log(2)));
+        const offsetBinary = address.substring(address.length - (Math.log(this.k) / Math.log(2)));
         return this.toDecimal(offsetBinary);
     }
 
@@ -110,22 +117,21 @@ class Cache {
     }
 
     // Finds the least recently used piece of cache, stores in on memory, and returns indices for replacing data
-    lruReplacement({ index }) {
-        let minIndices = { setIndex: 0, index: index, offset: 0 };
-        let minTime = 9999999999;
+    lruReplacement({ address }) {
+        let { index, offset } = this.extractBits(address);
+        let maxIndices = { setIndex: 0, index: index, offset: offset };
+        let maxTime = Number.MIN_VALUE;
         for (let i = 0; i < this.cache.length; i++) // for every set
-            for (let k = 0; k < this.cache[i][index].length; k++) // for every block offset at this set and index
-                if (this.cache[i][index][k].data[0] == 0) { // if valid bit == 0, nothing at this index
-                    minIndices.setIndex = i;
-                    minIndices.offset = k;
-                    return minIndices;
-                } else if (this.cache[i][index][k].time < minTime) {
-                    minTime = this.cache[i][index][k].time;
-                    minIndices.setIndex = i;
-                    minIndices.offset = k;
-                }
+            if (this.cache[i][index][offset].data[0] == 0) { // if valid bit == 0, nothing at this index
+                maxIndices.setIndex = i;
+                return maxIndices;
+            } else if (maxTime < this.cache[i][index][offset].time) {
+                maxTime = this.cache[i][index][offset].time;
+                maxIndices.setIndex = i;
+            }
         // if replacing write replaced one to memory
-        return minIndices;
+
+        return maxIndices;
     }
 
     // increments all times in the cache, and resets the time at provided indices
@@ -136,6 +142,30 @@ class Cache {
                     this.cache[i][j][k].time++;
         
         if (setIndex != -1)this.cache[setIndex][index][offset].time = 0;
+    }
+
+    recordReplacement() {
+        this.replacementData.replacements++;
+        this.replacementData.total++;
+    }
+
+    recordMiss() {
+        this.missData.misses++;
+        this.missData.total++;
+    }
+
+    recordAccess() {
+        this.missData.total++;
+        this.replacementData.total++;
+    }
+
+    getReplacementRate() {
+        return this.replacementData.replcements / this.replacementData.total;
+    }
+
+    // miss rate function, what is the rate in which we are misses / reads and -- writes replacing / writes  //
+    getMissRate() {
+        return this.missData.misses / this.missData.total; 
     }
 
     // initializes 3D array for n-way set association
