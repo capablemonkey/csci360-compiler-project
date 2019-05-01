@@ -257,7 +257,7 @@ class CPU {
   }
 
   subImmediate(instruction) {
-    return this.checkMatch(/^00101001(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
+    return this.checkMatch(/^00101101(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const immediateInt = parseInt(values["immediate"], 2);
 
