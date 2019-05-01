@@ -242,8 +242,31 @@ class CPU {
       this.registers[registerName] -= immediateInt;
     });
   }
-  //cmpRegister(instruction) {}
+  
+  // cmpRegister(instruction) {}
+  // cmp register, register
+  // [0011 1001][0000 0000][xxxx xxxx][xxxx xxxx]
+  // QUESTION: are we sure that cmp doesnt use specific registers to store the values of two arguments?
+  cmpRegister(instruction) {
+    return this.checkMatch(/^0010100100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction, (values) => {
+      const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
+      const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
+      // load comparison values into special arguments used by next instruction
+      //this.registers[registerNameA] < this.registers[registerNameB];
+    });
+  }
   //cmpImmediate(instruction) {}
+  // cmp register, immediate
+  // [0011 1101][xxxx xxxx][zzzz zzzz zzzz zzzz]
+  cmpImmediate(instruction) {
+    return this.checkMatch(/^00111101(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
+      const registerName = BINARY_TO_REGISTER[values["register"]];
+      const immediateInt = parseInt(values["immediate"], 2);
+      // load comparison values into special arguments used by next instruction
+      //this.registers[registerName] = immediateInt;
+    });
+  }
+
   //cmpMemory(instruction) {}
   //cmpArrayElement(instruction) {}
   //jmp(instruction) {}
