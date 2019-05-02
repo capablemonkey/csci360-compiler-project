@@ -128,6 +128,8 @@ class CPU {
       "edi": 0,
 
       "pc": 0,
+      "zf": 0,  //zero flag: set to 1 if cmp result equal, 1 if not equal
+      "sf": 0,  //sign flag: set to 1 if cmp result is negative, 0 if positive
       // TODO: use ebp and esp because they are for 32 bit systems
       "rbp": 0,
       "rsp": 0,
@@ -145,12 +147,27 @@ class CPU {
   // e.g. "01000000100000000010000000000000"
   execute(instruction) {
     const operations = [
+      //this.lea,
+      //this.push,
+      //this.pop,
+      //this.ret,
+      //this.call,
       this.movRegisterToRegister,
       this.movImmediateToRegister,
+      this.movMemoryToRegister,
+      this.movArrayElementToRegister,
       this.movImmediateToMemory,
       this.movRegisterToMemory,
       this.addImmediate,
       this.addRegisters,
+      this.subImmediate,
+      this.subRegister,
+      this.cmpRegister,
+      this.cmpImmediate,
+      this.cmpMemory,
+      this.cmpArrayElement,
+      this.jmp,
+      this.jumpConditional
     ];
 
     // try all of the operations until one pattern is found:
@@ -181,8 +198,26 @@ class CPU {
     });
   }
 
-  //movMemoryToRegister(instruction) {}
-  //movArrayElementToRegister(instruction) {}
+  movMemoryToRegister(instruction) {
+    return this.checkMatch(/^1000101100001111(?<register>\d{8})(?<memory>\d{8})$/, instruction, (values) => {
+      const registerName = BINARY_TO_REGISTER[values["register"]];
+      const address = this.registers["rbp"] + parseInt(values["address"], 2);
+
+      const value = parseInt(getDword(address));
+      this.registers[registerName] = value;
+    });
+  }
+
+  movArrayElementToRegister(instruction) {
+    return this.checkMatch(/^100010111111(?<baseAddrRegister>\d{4})(?<register>\d{8})(?<offsetRegister>\d{8})$/, instruction, (values) => {
+      const registerName = BINARY_TO_REGISTER[values["register"]];
+      const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]]
+                    + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]);
+
+      const value = parseInt(getDword(address));
+      this.registers[registerName] = value;
+    });
+  }
 
   movImmediateToMemory(instruction) {
     return this.checkMatch(/^11000111(?<address>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
@@ -221,56 +256,129 @@ class CPU {
     });
   }
 
-  //subRegister(instruction) {}
-  // sub register, register
-  // [0010 1001][0000 0000][xxxx xxxx][xxxx xxxx]
-  subRegisters(instruction) {
-    return this.checkMatch(/^0010100100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction, (values) => {
-      const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
-      const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
-      this.registers[registerNameA] -= this.registers[registerNameB];
-    });
-  }
-
-  //subImmediate(instruction) {}
-  // sub register, immediate
-  // [0010 1101][xxxx xxxx][zzzz zzzz zzzz zzzz]
   subImmediate(instruction) {
     return this.checkMatch(/^00101101(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const immediateInt = parseInt(values["immediate"], 2);
+
       this.registers[registerName] -= immediateInt;
     });
   }
-  
-  // cmpRegister(instruction) {}
-  // cmp register, register
-  // [0011 1001][0000 0000][xxxx xxxx][xxxx xxxx]
-  // QUESTION: are we sure that cmp doesnt use specific registers to store the values of two arguments?
-  cmpRegister(instruction) {
+
+  subRegister(instruction) {
     return this.checkMatch(/^0010100100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction, (values) => {
       const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
       const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
-      // load comparison values into special arguments used by next instruction
-      //this.registers[registerNameA] < this.registers[registerNameB];
+
+      this.registers[registerNameA] -= this.registers[registerNameB];
     });
   }
-  //cmpImmediate(instruction) {}
-  // cmp register, immediate
-  // [0011 1101][xxxx xxxx][zzzz zzzz zzzz zzzz]
+
+  cmpRegister(instruction) {
+    return this.checkMatch(/^0011100100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction, (values) => {
+      const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
+      const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
+
+      if(this.registers[registerNameA] === this.registers[registerNameB])
+        this.registers["zf"] = 1;
+      else
+        this.registers["zf"] = 0;
+      if(this.registers[registerNameA] > this.registers[registerNameB])
+        this.registers["sf"] = 0; //Positive
+      else
+        this.registers["sf"] = 1; //Negative
+    });
+  }
+
   cmpImmediate(instruction) {
     return this.checkMatch(/^00111101(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const immediateInt = parseInt(values["immediate"], 2);
-      // load comparison values into special arguments used by next instruction
-      //this.registers[registerName] = immediateInt;
+
+      if(this.registers[registerName] === immediateInt)
+        this.registers["zf"] = 1;
+      else
+        this.registers["zf"] = 0;
+      if(this.registers[registerName] > immediateInt)
+        this.registers["sf"] = 0; //Positive
+      else
+        this.registers["sf"] = 1; //Negative
     });
   }
 
-  //cmpMemory(instruction) {}
-  //cmpArrayElement(instruction) {}
-  //jmp(instruction) {}
-  //jumpConditional(instruction) {} //First 4 bits same, next 4 are condition
+  cmpMemory(instruction) {
+    return this.checkMatch(/^0011101100001111(?<register>\d{8})(?<address>\d{8})$/, instruction, (values) => {
+      const registerName = BINARY_TO_REGISTER[values["registerA"]];
+      const address = this.registers["rbp"] + parseInt(values["address"], 2);
+      const value = parseInt(getDword(address));
+
+      if(this.registers[registerName] === value)
+        this.registers["zf"] = 1;
+      else
+        this.registers["zf"] = 0;
+      if(this.registers[registerName] > value)
+        this.registers["sf"] = 0; //Positive
+      else
+        this.registers["sf"] = 1; //Negative
+    });
+  }
+
+  cmpArrayElement(instruction) {
+    return this.checkMatch(/^001110111111(?<baseAddrRegister>\d{4})(?<register>\d{8})(?<offsetRegister>\d{8})$/, instruction, (values) => {
+      const registerName = BINARY_TO_REGISTER[values["register"]];
+      const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]]
+                    + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]);
+      const value = parseInt(getDword(address));
+
+      if(this.registers[registerName] === value)
+        this.registers["zf"] = 1;
+      else
+        this.registers["zf"] = 0;
+      if(this.registers[registerName] > value)
+        this.registers["sf"] = 0; //Positive
+      else
+        this.registers["sf"] = 1; //Negative
+    });
+  }
+
+  jmp(instruction) {
+    return this.checkMatch(/^11101001(?<instructionLocation>\d{24})$/, instruction, (values) => {
+      this.registers["pc"] = parseInt(values["instructionLocation"],2);
+    });
+  }
+
+  jumpConditional(instruction) { //First 4 bits same, next 4 are condition
+    return this.checkMatch(/^1000(?<condition>\d{4})(?<instructionLocation>\d{24})$/, instruction, (values) => {
+      const condition = values["condition"];
+      const instructionLocation = parseInt(values["instructionLocation"],2);
+      switch(condition){
+        case '1111'://jg
+          if(this.registers["zf"] === 0 && this.registers["sf"] === 0)
+            this.registers["pc"] = instructionLocation;
+          break;
+        case '1101'://jge
+          if(this.registers["zf"] === 1 || this.registers["sf"] === 0)
+            this.registers["pc"] = instructionLocation;
+          break;
+        case '1100'://jl
+          if(this.registers["zf"] === 0 && this.registers["sf"] === 1)
+            this.registers["pc"] = instructionLocation;
+          break;
+        case '1110'://jle
+          if(this.registers["zf"] === 1 || this.registers["sf"] === 1)
+            this.registers["pc"] = instructionLocation;
+          break;
+        case '0100'://je
+          if(this.registers["zf"] === 1)
+            this.registers["pc"] = instructionLocation;
+          break;
+        case '0101'://jne
+          if(this.registers["zf"] === 0)
+            this.registers["pc"] = instructionLocation;
+          break;
+      }
+    });
+  }
   // TODO: test me
   step() {
     this.registers["pc"] += 4;
