@@ -212,7 +212,7 @@ class CPU {
     return this.checkMatch(/^100010111111(?<baseAddrRegister>\d{4})(?<register>\d{8})(?<offsetRegister>\d{8})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]]
-                    + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]));
+                    + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]);
 
       const value = parseInt(getDword(address));
       this.registers[registerName] = value;
@@ -327,7 +327,7 @@ class CPU {
     return this.checkMatch(/^001110111111(?<baseAddrRegister>\d{4})(?<register>\d{8})(?<offsetRegister>\d{8})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]]
-                    + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]));
+                    + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]);
       const value = parseInt(getDword(address));
 
       if(this.registers[registerName] === value)
