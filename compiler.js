@@ -38,9 +38,9 @@ class CallerArgument extends Node {
     /* value: the value of the argument
        type: variable || immediate || address
        order: number the parameter number this argument is for the function
-       dataType: the dataType of the argument: int, int*, float etc
+       dataType: the dataType of the argument: int, int*, float etc 
        dataType is not used here but it helps to have for FunctionCall class
-    */
+    */ 
     super();
     this.value = value;
     this.type = type;
@@ -56,10 +56,10 @@ class CallerArgument extends Node {
       case 'variable':
         address = symbolTable[this.value] * -1;
         return [`mov eax, DWORD PTR [rbp - ${address}]`, `mov ${argumentRegister}, eax`];
-      case 'immediate':
+      case 'immediate': 
         return `mov ${argumentRegister} ${this.value}`;
       case 'address': // handles references & pointers
-        address = symbolTable[this.value] * -1;
+        address = symbolTable[this.value] * -1;  
         return [`lea rax, [rbp - ${address}]`, `mov ${argumentRegister}, rax`];
       default:
         throw `Invalid argument type: ${this.type}`;
@@ -87,10 +87,9 @@ class ArrayElement extends Node {
       return {
         preInstructions: [
           `mov rcx, DWORD PTR [rbp - ${baseAddress}]`,
-          `mov rdx, DWORD PTR [rbp - ${indexAddress}]`,
-          `mov rdx, DWORD PTR [rcx + 4*rdx]`
+          `mov rdx, DWORD PTR [rbp - ${indexAddress}]`
         ],
-          resultOperand: 'rdx'
+          resultOperand: 'DWORD PTR [rcx + 4*rdx]'
         }
     }
   }

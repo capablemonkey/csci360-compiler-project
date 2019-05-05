@@ -59,8 +59,8 @@ $(document).ready(function() {
     const externalStorage = [];
     toASCII(tokens, externalStorage);
     const {parseTree, output} = compile(tokens);
-    //const allInstructions = //Parse output;
-    //externalStorage.concat(translateInstructions(allInstructions));
+    const allInstructions = //Parse output;
+    externalStorage.concat(translateInstructions(allInstructions));
     fillTable(document.getElementById('external-source'), externalStorage);
 
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
