@@ -139,7 +139,7 @@ describe("ASM to Machine Code", () => {
 
   it("pop reg", () => {
     const result = new ASMInstruction('pop', registerOperand('edx'));
-    const expected = '00000001000000110000000000000000';
+    const expected = '00000111000000110000000000000000';
     expect(result.toMachineCode()).to.equal(expected);
   });
 

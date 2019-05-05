@@ -257,12 +257,12 @@ class ASMInstruction {
       }
       case 'push':{
         const register = Registers[this.operand1.value];
-        machineCode += '00000110' + register +'0000000000000000';
+        machineCode += '00000110' + register + '0000000000000000';
         break;
       }
       case 'pop':{
         const register = Registers[this.operand1.value];
-        machineCode += '00000001' + register + '0000000000000000';
+        machineCode += '00000111' + register + '0000000000000000';
         break;
       }
       case 'lea':{
