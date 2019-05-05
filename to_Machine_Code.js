@@ -199,7 +199,7 @@ class ASMInstruction {
           }
           //cmp register, memory
           case 'memory':{
-            if(typeof this.operand2 === 'string'){
+            if(typeof this.operand2.value === 'string'){
               const memory = toBinaryOperand(this.operand2);
               machineCode += '0011101100001111' + register1 + memory;
               break;
@@ -221,37 +221,37 @@ class ASMInstruction {
         break;
       }
       case 'jmp':{
-        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        const instAddress = toBinaryOperand(this.operand1);
         machineCode += '11101001' + instAddress;
         break;
       }
       case 'jg':{
-        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        const instAddress = toBinaryOperand(this.operand1);
         machineCode += '10001111' + instAddress;
         break;
       }
       case 'jl':{
-        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        const instAddress = toBinaryOperand(this.operand1);
         machineCode += '10001100' + instAddress;
         break;
       }
       case 'je':{
-        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        const instAddress = toBinaryOperand(this.operand1);
         machineCode += '10000100' + instAddress;
         break;
       }
       case 'jge':{
-        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        const instAddress = toBinaryOperand(this.operand1);
         machineCode += '10001101' + instAddress;
         break;
       }
       case 'jle':{
-        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        const instAddress = toBinaryOperand(this.operand1);
         machineCode += '10001110' + instAddress;
         break;
       }
       case 'jne':{
-        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        const instAddress = toBinaryOperand(this.operand1);
         machineCode += '10000101' + instAddress;
         break;
       }
@@ -272,7 +272,7 @@ class ASMInstruction {
         break;
       }
       case 'call':{
-        const instAddress = toBinaryOperand(LabelTable[this.operand1]);
+        const instAddress = toBinaryOperand(this.operand1);
         machineCode += '11101000' + instAddress;
         break;
       }
@@ -291,15 +291,9 @@ class ASMInstruction {
 }
 
 function translateInstructions(instArray) {
-  let Labels = {};
-  for(let i=0; i<instArray.length; i++) {
-    if(instArray[i].op === 'label') {
-      Labels[instArray[i].operand1] = instArray[i].operand2;
-    }
-  }
   let externalMachineCode = [];
   for(let i=0; i<instArray.length; i++) {
-    let fullInstruction = instArray[i].toMachineCode(Labels);
+    let fullInstruction = instArray[i].toMachineCode();
     externalMachineCode.push(fullInstruction.slice(0,8));
     externalMachineCode.push(fullInstruction.slice(8,16));
     externalMachineCode.push(fullInstruction.slice(16,24));
