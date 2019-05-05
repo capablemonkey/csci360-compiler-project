@@ -38,9 +38,9 @@ class CallerArgument extends Node {
     /* value: the value of the argument
        type: variable || immediate || address
        order: number the parameter number this argument is for the function
-       dataType: the dataType of the argument: int, int*, float etc 
+       dataType: the dataType of the argument: int, int*, float etc
        dataType is not used here but it helps to have for FunctionCall class
-    */ 
+    */
     super();
     this.value = value;
     this.type = type;
@@ -56,10 +56,10 @@ class CallerArgument extends Node {
       case 'variable':
         address = symbolTable[this.value] * -1;
         return [`mov eax, DWORD PTR [rbp - ${address}]`, `mov ${argumentRegister}, eax`];
-      case 'immediate': 
+      case 'immediate':
         return `mov ${argumentRegister} ${this.value}`;
       case 'address': // handles references & pointers
-        address = symbolTable[this.value] * -1;  
+        address = symbolTable[this.value] * -1;
         return [`lea rax, [rbp - ${address}]`, `mov ${argumentRegister}, rax`];
       default:
         throw `Invalid argument type: ${this.type}`;
@@ -183,6 +183,7 @@ class Assignment extends Node {
 
   toAssembly(symbolTable) {
     const destination = this.destination.toAssembly(symbolTable);
+    //Does not support ArrayElement assignment a[5]=1;
 
     if(this.operand instanceof BinaryExpression || this.operand instanceof FunctionCall){
       // binaryExpression stores result in eax; so move eax into destination variable
@@ -202,10 +203,14 @@ class Assignment extends Node {
         ];
     } else if (this.operand instanceof ArrayElement) {
       const arr = this.operand.toAssembly(symbolTable);
-      return [
-        arr.preInstructions,
-        `mov ${destination}, ${arr.resultOperand}`
-      ].flat();
+      const inst = [arr.preInstructions];
+      if(destination.includes('DWORD')){
+        inst.push(`mov eax, ${arr.resultOperand}`);
+        inst.push(`mov ${destination}, eax`);
+      }
+      else
+        inst.push(`mov ${destination}, ${arr.resultOperand}`);
+      return inst.flat();
     } else {
       throw `Invalid operand for assignment: ${this.operand}`;
     }

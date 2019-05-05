@@ -24,7 +24,7 @@ function registerOperand(value) {
 }
 
 function memoryOperand(value) {
-  if(Number(value) != Number.NaN){
+  if(!isNaN(Number(value))){
     return {
       type: 'memory',
       value: value //Store as a string in form '-123' or obj with 2 regs
@@ -32,7 +32,7 @@ function memoryOperand(value) {
   }
   else{
     const reg1 = value.substring(0,3);
-    const reg2 = value.substring(value.length-3,3);
+    const reg2 = value.substring(value.length-3);
     return {
       type: 'memory',
       value: {
@@ -57,6 +57,8 @@ function toBinaryOperand(operand) {
     isNegative = true;
     number = number.substring(1);
   }
+  if(isNegative)
+    number--;
   number = Number(number);
   number = number.toString(2);
   if(operand.type === 'memory')
@@ -66,13 +68,14 @@ function toBinaryOperand(operand) {
   else if(operand.type === 'label')
     number = number.padStart(24,'0');
   if(isNegative){//Flip the bits
+    let negNum = '';
     for(let i=0; i<number.length; i++){
       if(number[i] === '0')
-        number[i] = '1';
-      else {
-        number[i] = '0';
-      }
+        negNum += '1';
+      else
+        negNum += '0';
     }
+    number = negNum;
   }
   return number;
 }
@@ -100,7 +103,7 @@ class ASMInstruction {
               }
               //mov register, memory
               case 'memory':{
-                if(typeof this.operand2 === 'string'){
+                if(typeof this.operand2.value === 'string'){
                   const memory = toBinaryOperand(this.operand2);
                   machineCode += '1000101100001111' + register1 + memory;
                   break;
