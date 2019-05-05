@@ -282,7 +282,7 @@ class ASMInstruction {
       }
       //Label
       default:{
-        //Do nothing
+        machineCode += '00000000000000000000000000000000';
         break;
       }
     }
