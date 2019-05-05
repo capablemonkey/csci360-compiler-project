@@ -147,11 +147,11 @@ class CPU {
   // e.g. "01000000100000000010000000000000"
   execute(instruction) {
     const operations = [
-      //this.lea,
-      //this.push,
-      //this.pop,
-      //this.ret,
-      //this.call,
+      this.lea,
+      this.push,
+      this.pop,
+      this.call,
+      this.ret,
       this.movRegisterToRegister,
       this.movImmediateToRegister,
       this.movMemoryToRegister,
@@ -178,6 +178,49 @@ class CPU {
     }
 
     return true;
+  }
+
+  lea(instruction){
+    return this.checkMatch(/^1000110100001111(?<register>\d{8})(?<address>\d{8})$/, instruction, (values) => {
+      const register = BINARY_TO_REGISTER[values["register"]];
+      const address = this.registers['rbp'] + parseInt(values["address"], 2);
+
+      this.registers[registerNameA] = address;
+    });
+  }
+
+  push(instruction){
+    return this.checkMatch(/^00000110(?<register>\d{8})0000000000000000)$/, instruction, (values) => {
+      const register = BINARY_TO_REGISTER[values["register"]];
+
+      this.stack.push(this.registers[register])
+    });
+  }
+
+  pop(instruction){
+    return this.checkMatch(/^00000111(?<register>\d{8})0000000000000000)$/, instruction, (values) => {
+      const register = BINARY_TO_REGISTER[values["register"]];
+
+      this.registers[register] = this.stack[stack.length-1];
+      this.stack.pop();
+    });
+  }
+
+  call(instruction){
+    return this.checkMatch(/^11101000(?<instructionLocation>\d{24}))$/, instruction, (values) => {
+      const instructionLocation = parseInt(values["instructionLocation"], 2);
+
+      this.stack.push(this.registers['pc']);
+      this.registers['pc'] = instructionLocation;
+    });
+  }
+
+  ret(instruction){
+    return this.checkMatch(/^11000010000000000000000000000000)$/, instruction, (values) => {
+
+      this.registers['pc'] = this.stack[stack.length-1];
+      this.stack.pop();
+    });
   }
 
   movRegisterToRegister(instruction) {
