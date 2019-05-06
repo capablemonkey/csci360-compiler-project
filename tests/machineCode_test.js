@@ -1,25 +1,25 @@
 describe("ASM to Machine Code", () => {
   it("mov reg, reg", () => {
     const result = new ASMInstruction('mov', registerOperand('eax'), registerOperand('edx'));
-    const expected = '10001001000000000000000100000011';
+    const expected = '10001001000000000000000000000011';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
   it("mov reg, mem", () => {
     const result = new ASMInstruction('mov', registerOperand('eax'), memoryOperand('-4'));
-    const expected = '10001011000011110000000111111100';
+    const expected = '10001011000011110000000011111100';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
   it("mov reg, mem[reg+4*reg]", () => {
     const result = new ASMInstruction('mov', registerOperand('eax'), memoryOperand('rcx +4*rdx'));
-    const expected = '10001011111100100000000100000011';
+    const expected = '10001011111100100000000000000011';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
   it("mov reg, imm", () => {
     const result = new ASMInstruction('mov', registerOperand('eax'), immediateOperand('15'));
-    const expected = '11000110000000010000000000001111';
+    const expected = '11000110000000000000000000001111';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
@@ -37,55 +37,55 @@ describe("ASM to Machine Code", () => {
 
   it("add reg, reg", () => {
     const result = new ASMInstruction('add', registerOperand('eax'), registerOperand('edx'));
-    const expected = '00000001000000000000000100000011';
+    const expected = '00000001000000000000000000000011';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
   it("add reg, imm", () => {
     const result = new ASMInstruction('add', registerOperand('eax'), immediateOperand('15'));
-    const expected = '00000101000000010000000000001111';
+    const expected = '00000101000000000000000000001111';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
   it("sub reg, reg", () => {
     const result = new ASMInstruction('sub', registerOperand('eax'), registerOperand('edx'));
-    const expected = '00101001000000000000000100000011';
+    const expected = '00101001000000000000000000000011';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
   it("sub reg, imm", () => {
     const result = new ASMInstruction('sub', registerOperand('eax'), immediateOperand('15'));
-    const expected = '00101101000000010000000000001111';
+    const expected = '00101101000000000000000000001111';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
   it("cmp reg, reg", () => {
     const result = new ASMInstruction('cmp', registerOperand('eax'), registerOperand('edx'));
-    const expected = '00111001000000000000000100000011';
+    const expected = '00111001000000000000000000000011';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
   it("cmp reg, mem", () => {
     const result = new ASMInstruction('cmp', registerOperand('eax'), memoryOperand('-4'));
-    const expected = '00111011000011110000000111111100';
+    const expected = '00111011000011110000000011111100';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
   it("cmp reg, mem[reg+4*reg]", () => {
     const result = new ASMInstruction('cmp', registerOperand('eax'), memoryOperand('rcx +4*rdx'));
-    const expected = '00111011111100100000000100000011';
+    const expected = '00111011111100100000000000000011';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
   it("cmp reg, imm", () => {
     const result = new ASMInstruction('cmp', registerOperand('eax'), immediateOperand('15'));
-    const expected = '00111101000000010000000000001111';
+    const expected = '00111101000000000000000000001111';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
   it("mov reg, mem", () => {
     const result = new ASMInstruction('mov', registerOperand('eax'), memoryOperand('-4'));
-    const expected = '10001011000011110000000111111100';
+    const expected = '10001011000011110000000011111100';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
@@ -145,7 +145,7 @@ describe("ASM to Machine Code", () => {
 
   it("lea reg, mem", () => {
     const result = new ASMInstruction('lea', registerOperand('eax'), memoryOperand('-4'));
-    const expected = '10001101000011110000000111111100';
+    const expected = '10001101000011110000000011111100';
     expect(result.toMachineCode()).to.equal(expected);
   });
 
