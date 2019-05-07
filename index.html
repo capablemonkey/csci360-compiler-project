@@ -8,6 +8,7 @@
   <script type="text/javascript" src="compiler.js"></script>
   <script type="text/javascript" src="parser.js"></script>
   <script type="text/javascript" src="cache.js"></script>
+  <script type="text/javascript" src="cpu.js"></script>
   <script type="text/javascript" src="app.js"></script>
 </head>
 <body>
@@ -63,6 +64,31 @@ int main() {
         <table id="external-source" class="table-sm"></table>
       </div>
     </div>
+
+    <!--Step button-->
+    <button class="button-step btn btn-lg btn-primary" type="">Step</button>
+    <!-- Registers -->
+    <div class="section">
+      <h4> Registers </h4>
+      <div class="output rounded bg-light code-font">
+        <table id="registers" class="table-sm"></table>
+      </div>
+    </div>
+    <!-- Cache -->
+    <div class="section">
+        <h4> Cache </h4>
+        <div class="output rounded bg-light code-font">
+          <table id="cache" class="table-sm"></table>
+        </div>
+    </div>
+    <!-- Memory -->
+    <div class="section">
+        <h4> Memory </h4>
+        <div class="output rounded bg-light code-font">
+          <table id="memory" class="table-sm"></table>
+        </div>
+    </div>
+
   </div>
 </body>
 </html>
