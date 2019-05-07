@@ -190,7 +190,7 @@ class CPU {
   }
 
   push(instruction){
-    return this.checkMatch(/^00000110(?<register>\d{8})0000000000000000)$/, instruction, (values) => {
+    return this.checkMatch(/^00000110(?<register>\d{8})0000000000000000$/, instruction, (values) => {
       const register = BINARY_TO_REGISTER[values["register"]];
 
       this.stack.push(this.registers[register])
@@ -198,7 +198,7 @@ class CPU {
   }
 
   pop(instruction){
-    return this.checkMatch(/^00000111(?<register>\d{8})0000000000000000)$/, instruction, (values) => {
+    return this.checkMatch(/^00000111(?<register>\d{8})0000000000000000$/, instruction, (values) => {
       const register = BINARY_TO_REGISTER[values["register"]];
 
       this.registers[register] = this.stack[stack.length-1];
@@ -207,7 +207,7 @@ class CPU {
   }
 
   call(instruction){
-    return this.checkMatch(/^11101000(?<instructionLocation>\d{24}))$/, instruction, (values) => {
+    return this.checkMatch(/^11101000(?<instructionLocation>\d{24})$/, instruction, (values) => {
       const instructionLocation = parseInt(values["instructionLocation"], 2);
 
       this.stack.push(this.registers['pc']);
@@ -216,7 +216,7 @@ class CPU {
   }
 
   ret(instruction){
-    return this.checkMatch(/^11000010000000000000000000000000)$/, instruction, (values) => {
+    return this.checkMatch(/^11000010000000000000000000000000$/, instruction, (values) => {
 
       this.registers['pc'] = this.stack[stack.length-1];
       this.stack.pop();
