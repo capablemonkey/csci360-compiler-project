@@ -12,6 +12,38 @@ function fillTable(table, data){
   table.innerHTML = text;
 }
 
+function fillRegisters(table, registers) {
+  let text = "<tr>";
+  const keys = Object.keys(registers);
+  for (let i = 0; i < keys.length; i++) {
+    const reg = keys[i];
+    text += "<td>" + reg + " : " + registers[key] + "</td>";
+    text += "</tr><tr>";
+  }
+  text += "</tr>";
+  table.innerHTML = text;
+}
+
+function fillCache(table, cache) {
+  let text = "<tr>";
+  for (let r = 0; r < cache[0].length; r++) {
+    for (let s = 0; s < cache.length; i++) {
+      for (let b = 0; b < cache[s][r].length; b++) {
+        text += "<td>" + cache[s][r][b] + "  </td>";
+      }
+      text += "<td>    </td>"; // gap between sets
+    }
+    text += "</tr><tr>";
+  }
+  text += "</tr>";
+  table.innerHTML = text;
+}
+
+// not sure how memory is structured so 
+function fillMemory(table, memory) {
+
+}
+
 //Converts input to ASCII binary and populates
 //the source code part of the External Storage
 function toBinary(sourceCode, fillTable){
@@ -51,13 +83,31 @@ function compile(string) {
   };
 }
 
+function step(computer) {
+  computer.cpu.step();
+}
+
 $(document).ready(function() {
   $('.button-compile').click(function(){
     const input = $('.editor-textbox').first().val();
     const {parseTree, output, tokens} = compile(input);
-
+    const tokens = tokenize(input);
+    const externalStorage = [];
+    toASCII(tokens, externalStorage);
+    const {parseTree, output} = compile(tokens);
+    fillTable(document.getElementById('external-source'), externalStorage);
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
     $('#assembly').text(output);
     toBinary(tokens, fillTable);
+  })
+  $('.button-step').click(function(){
+    step();
+    // This should be all be in a computer object
+    //const cpu = new CPU();
+    //const registers = cpu.registers;
+    //fillRegisters(document.getElementById('registers'), registers);
+    //const cache = new Cache();
+    //fillCache(document.getElementById('cache'), cache.cache);
+    //fillMemory(document.getElementById('memory'), );
   })
 })
