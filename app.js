@@ -2,7 +2,7 @@
 //then inserts the HTML code into element
 function fillTable(table, data){
   let text = "<tr>";
-  for(let i=0; i<1024; i++){
+  for(let i=0; i<2048; i++){
     text += "<td>" + i + "</td>";
     text += "<td>" + data[i] + "</td>";
     if(i%8 === 7)
@@ -14,9 +14,7 @@ function fillTable(table, data){
 
 //Converts input to ASCII binary and populates
 //the source code part of the External Storage
-function toBinary(sourceCode, fillTable){
-  const table = document.getElementById('external-source');
-  const externalStorage = [];
+function toASCII(sourceCode, externalStorage) {
   sourceCode.forEach(function(element){
     if(element === 'int' || element === 'return'){
       element += ' ';
@@ -28,11 +26,14 @@ function toBinary(sourceCode, fillTable){
   });
   while(externalStorage.length < 1024)
     externalStorage.push('00000000');
+}
+
+function toTable(sourceCode, fillTable){
+  const table = document.getElementById('external-source');
   fillTable(table, externalStorage);
 }
 
-function compile(string) {
-  const tokens = tokenize(string);
+function compile(tokens) {
   const parser = new Parser(tokens);
   const parseTree = parser.parse();
   const functions = parseTree.functions;
@@ -54,10 +55,13 @@ function compile(string) {
 $(document).ready(function() {
   $('.button-compile').click(function(){
     const input = $('.editor-textbox').first().val();
-    const {parseTree, output, tokens} = compile(input);
+    const tokens = tokenize(input);
+    const externalStorage = [];
+    toASCII(tokens, externalStorage);
+    const {parseTree, output} = compile(tokens);
+    fillTable(document.getElementById('external-source'), externalStorage);
 
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
     $('#assembly').text(output);
-    toBinary(tokens, fillTable);
   })
 })
