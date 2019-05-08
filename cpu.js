@@ -71,33 +71,282 @@
 // 1000: pc
 
 
-// Simple mapping of address => byte value for now until we have our
-// fancier memory in place.
-class Memory {
-  constructor() {
-    this.addressToByte = {};
+class PhysicalMemory {
+  constructor(capacityBytes, pageSize) {
+    // Stores a string of bits
+    this.storage = "0".repeat(capacityBytes * 8);
+    this.pageSize = pageSize; // number of dwords per page
+    this.capacityPages = Math.floor(capacityBytes / (pageSize * 4));
+    this.usedPageCount = 0;
   }
 
-  // address is an integer
-  // Dword is 4 bytes represented as a string of 1s and 0s
+  // returns the 32 bits (dword) at address
   getDword(address) {
-    const word = [
-      this.addressToByte[address],
-      this.addressToByte[address + 1],
-      this.addressToByte[address + 2],
-      this.addressToByte[address + 3],
-    ].join("");
+    const dwordStart = address * 32;
+    this.checkBounds(dwordStart);
 
-    return word;
+    return this.storage.slice(dwordStart, dwordStart + 32);
   }
 
-  setDword(address, word) {
-    this.addressToByte[address] = word.slice(0, 8);
-    this.addressToByte[address + 1] = word.slice(8, 16);
-    this.addressToByte[address + 2] = word.slice(16, 24);
-    this.addressToByte[address + 3] = word.slice(24, 32);
+  // sets the 32 bit string dword at the address
+  setDword(address, dword) {
+    const dwordStart = address * 32;
+    this.checkBounds(dwordStart);
+
+    this.storage = this.storage.split("").splice(dwordStart, 32, dword).join("");
+  }
+
+  checkBounds(dwordStart) {
+    if (dwordStart + 32 >= this.storage.length) {
+      throw new Error("Out of bounds physical memory access.");
+    }
   }
 }
+
+// Physical memory size: 5000 dwords (4 bytes) (for the stack) + 1000 for the code
+// Virtual memory: 5000 for the stack + 5000 for the code
+
+
+class VirtualMemory {
+  // add code area: memory address 0 and onwards
+  // add data area: memory address max and grows downwards
+
+  // BECAUSE WE DON'T HAVE SWAPPING, We cannot ever evict the stack from physical memory
+
+  /*
+
+  ===============     Highest Address (e.g. 0xFFFF)
+  |             |
+  |    STACK    |
+  |             |
+  |.............|  <- Old Stack Pointer (e.g. 0xEEEE)
+  |             |
+  | Newly       |
+  | allocated   |
+  |-------------|  <- New Stack Pointer (e.g. 0xAAAA)
+  .     ...     .
+  |             |
+  |-------------|
+  |             |
+  |    CODE     |
+  |             |
+  ===============     Lowest Address    (e.g. 0x0000)
+   */
+
+  // virtual memory: [0-3584: code], [4096 -> 3584] stack
+  constructor(physicalMemory, externalStorage, pageSize) {
+    this.physicalMemory = physicalMemory;
+    this.externalStorage = externalStorage;
+    this.pageSize = pageSize; // number of dwords per page
+
+    this.virtualAddressSpaceMax = 4096;
+    this.stackLimit = 512; // bytes
+
+    // this.pageTable[pid][address] = {"location": "physicalMemory", "pageIndex": 34, "valid": true}
+    // this.pageTable[pid][address] = {"location": "external", "pageIndex": 200, "valid": false}
+    // maps virtual page number to physical page number
+    this.pageTable = {};
+  }
+
+  getDword(pid, virtualAddress) {
+    // locate page
+    // move page into memory if needed
+    // get Dword from block from page
+
+    const virtualPageIndex = this.getVirtualPageIndex(virtualAddress);
+    const pageOffset = this.getVirtualPageOffset(virtualAddress);
+    const hit = this.pageTable[pid][virtualPageIndex];
+
+    if (hit && hit.location == "physicalMemory" && hit.valid == true) {
+      const pageStart = hit.pageIndex * this.pageSize * 4; // 4 dwords
+      return this.physicalMemory.getDword(pageStart + pageOffset);
+    } else {
+      // its on external storage, so load into physical memory
+      const physicalPageIndex = this.loadPageToPhysicalMemory(hit.pageIndex);
+
+      // update virtual page table
+      this.pageTable[pid][virtualPageIndex] = {
+        location: "physicalMemory",
+        pageIndex: physicalPageIndex,
+        valid: true
+      };
+
+     // read from physical memory
+     return this.physicalMemory.getDword(physicalPageIndex * this.pageSize * 4 + pageOffset);
+    }
+  }
+
+  loadPageToPhysicalMemory(externalStoragePageIndex) {
+    // find a page to free up in physical memory
+    // load all the dwords from the external page into the physical page
+    const freePageIndex = this.freePage();
+    const physicalMemoryPageStartAddress = freePageIndex * this.pageSize * 4;
+    const externalStoragePageStartAddress = externalStoragePageIndex * this.pageSize * 4;
+
+    for (let i = 0; i < this.pageSize; i++) {
+      const dword = this.externalStorage.getDword(externalStoragePageStartAddress + i * 4);
+      this.physicalMemory.setDword(physicalMemoryPageStartAddress + i * 4, dword);
+    }
+
+    return freePageIndex;
+  }
+
+  // finds a free page or chooses one to be replaced
+  // returns physical page index
+  freePage() {
+    return 0;
+  }
+
+  // sets dword in physical memory where dword is a string of 32 bits
+  setDword(pid, virtualAddress, dword) {
+    // check pageTable to see if page is in physical memory
+    // if in physical memory, then just update dword in physical memory
+    // otherwise, load from disk into physical memory and then set dword in physical memory
+
+    const virtualPageIndex = this.getVirtualPageIndex(virtualAddress);
+    const pageOffset = this.getVirtualPageOffset(virtualAddress);
+    const hit = this.pageTable[pid][virtualPageIndex];
+
+    if (hit.location == "physicalMemory" && hit.valid == true) {
+      const pageStart = hit.pageIndex * this.pageSize * 4; // 4 dwords
+      return this.physicalMemory.setDword(pageStart + pageOffset, dword);
+    } else {
+      // its on external storage, so load into physical memory
+      const physicalPageIndex = this.loadPageToPhysicalMemory(hit.pageIndex);
+
+      // update virtual page table
+      this.pageTable[pid][virtualPageIndex] = {
+        location: "physicalMemory",
+        pageIndex: physicalPageIndex,
+        valid: true
+      };
+
+     // read from physical memory
+     return this.physicalMemory.setDword(physicalPageIndex * this.pageSize * 4 + pageOffset, dword);
+    }
+  }
+
+  allocateStack(pid) {
+    // create pages in page table for stack
+    // pageTable[255] = {location: "physicalMemory", pageIndex: 64}
+    // pageTable[254] = {location: "physicalMemory", pageIndex: 63}
+    // ...
+    // pageTable[223] = {location: "physicalMemory", pageIndex: 32}
+  }
+
+
+  loadProgram(pid, externalStorageStartAddress, lengthDword) {
+    // TODO: fill the page table with the pages in the externalStorage, but no pages need to be loaded
+    // pageTable[0] => {location: externalStorage, pageIndex: 0}
+    // pageTable[1] => {location: externalStorage, pageIndex: 1}
+    //
+    //
+    // for (const i = 0; i < lengthDword; i++) {
+    //   const dword = this.externalStorage.getDword(externalStorageStartAddress + i * 32);
+
+    //   const virtualAddress = i * 4;
+    //   this.setDword(pid, virtualAddress, dword);
+    // }
+
+    this.allocateStack(pid);
+  }
+
+  // virtual address:
+  // 1000 1001 1011
+  // \-------/ \--/
+  //  vpage     offset
+  //  
+  // virtual page index: 1000 1001
+  // offset: 1011
+  // 
+  // 1 page             = 4 dwords per page
+  //                    = 4 instructions per page
+  //                    = 16 bytes
+  // 
+  // total virtual address space = 2 ^ 12 = 4096 addresses
+  // physical memory is 1024 bytes = 2^10
+  // stack limit: 512 bytes (we always keep these pages around)
+  // remaining for code pages = 512 bytes = 32 pages
+  //
+  // 10 pages = 160 bytes = 40 instructions * 4 bytes/instruction
+  // to fill up all the code pages, we need at least 512 bytes = 128 instructions
+  // 
+
+  getVirtualPageIndex(virtualAddress) {
+    return Math.floor(virtualAddress / (this.pageSize * 4));
+  }
+
+  getPageOffset(virtualAddress) {
+    return virtualAddress % (this.pageSize * 4);
+  }
+}
+
+class ExternalStorage {
+  constructor() {
+    // Stores a string of bits
+    this.storage = "";
+  }
+
+  load(data) {
+    this.storage = data;
+  }
+
+  // returns the 32 bits (dword) at address
+  getDword(address) {
+    const dwordStart = address * 4 * 8;
+    this.checkBounds(dwordStart);
+
+    return this.storage.slice(dwordStart, dwordStart + 32);
+  }
+
+  // sets the 32 bit string dword at the address
+  setDword(address, dword) {
+    const dwordStart = address * 4 * 8;
+    this.checkBounds(dwordStart);
+
+    this.storage.splice(dwordStart, 32, dword);
+  }
+
+  checkBounds(dwordStart) {
+    if (dwordStart + 32 >= this.storage.length) {
+      throw new Error("Out of bounds external storage access.");
+    }
+  }
+}
+
+class Computer {
+  /*
+    CPU -> cache -> virtual memory -> physicalMemory
+                       |                   ^
+                       \> externalStorage -/
+   */
+  constructor() {
+    const pageSize = 4;
+    this.externalStorage = new ExternalStorage();
+    this.physicalMemory = new PhysicalMemory(1024, pageSize);
+    this.virtualMemory = new VirtualMemory(this.physicalMemory, this.externalStorage, pageSize);
+
+    this.cache = new Cache({nway: 4, size: 2, k: 2, bits: 12, virtualMemory: this.virtualMemory});
+    this.cpu = new CPU(this.cache);
+  }
+
+  loadProgram(bits) {
+    const pid = 0;
+    this.externalStorage.load(bits);
+
+    const programSizeDwords = bits / 32;
+    this.virtualMemory.loadProgram(pid, 0, programSizeDwords);
+  }
+
+  execute() {
+    this.cpu.step();
+  }
+}
+
+machineCode = compile();
+c = new Computer();
+c.loadProgram(machineCode)
+c.execute();
 
 const BINARY_TO_REGISTER = {
   "0000": "eax",
@@ -117,7 +366,7 @@ function intToNBytes(integer, n) {
 }
 
 class CPU {
-  constructor(LabelTable) {
+  constructor(cache, LabelTable) {
     // integer values:
     this.registers = {
       "eax": 0,
@@ -130,6 +379,7 @@ class CPU {
       "pc": 0,
       "zf": 0,  //zero flag: set to 1 if cmp result equal, 1 if not equal
       "sf": 0,  //sign flag: set to 1 if cmp result is negative, 0 if positive
+
       // TODO: use ebp and esp because they are for 32 bit systems
       "rbp": 4096,
       "rsp": 4096,
@@ -141,7 +391,7 @@ class CPU {
     this.LabelTable = LabelTable;
     this.startInstruction = 0;
     this.stack = [];
-    this.memory = new Memory();
+    this.memory = cache;
     this.currentInstruction = 'Program Start';
   }
 
@@ -394,7 +644,7 @@ class CPU {
     return this.checkMatch(/^0011101100001111(?<register>\d{4})(?<address>\d{12})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["registerA"]];
       const address = this.registers["rbp"] + parseInt(values["address"], 2);
-      const value = parseInt(getDword(address));
+      const value = parseInt(this.memory.getDword(address));
 
       this.currentInstruction = `cmp ${registerName}, DWORD[rbp${parseInt(values["address"], 2)}]`;
 
@@ -479,9 +729,9 @@ class CPU {
   }
   // TODO: test me
   step() {
-    this.registers["pc"] += 4;
     nextInstruction = this.memory.getDword(this.registers["pc"]);
     execute(nextInstruction);
+    this.registers["pc"] += 4;
   }
 
   getState() {
