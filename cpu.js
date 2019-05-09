@@ -146,7 +146,7 @@ class CPU {
 
   // instruction is a 32 bit instruction represented as a string of "1"s and "0"s
   // e.g. "01000000100000000010000000000000"
-  execute(instruction, labelTable) {
+  execute(instruction, LabelTable) {
     const operations = [
       this.lea,
       this.push,
@@ -172,7 +172,7 @@ class CPU {
     ];
 
     // try all of the operations until one pattern is found:
-    const found = operations.some((op) => op.apply(this, [instruction, labelTable]));
+    const found = operations.some((op) => op.apply(this, [instruction, LabelTable]));
 
     if (!found) {
       throw new Error(`Encountered unknown instruction: ${instruction}`);
@@ -181,7 +181,7 @@ class CPU {
     return true;
   }
 
-  lea(instruction, labelTable){
+  lea(instruction, LabelTable){
     return this.checkMatch(/^1000110100001111(?<register>\d{4})(?<address>\d{12})$/, instruction, (values) => {
       const register = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers['rbp'] + parseInt(values["address"], 2);
@@ -191,7 +191,7 @@ class CPU {
     });
   }
 
-  push(instruction labelTable){
+  push(instruction LabelTable){
     return this.checkMatch(/^000001100000(?<register>\d{4})0000000000000000$/, instruction, (values) => {
       const register = BINARY_TO_REGISTER[values["register"]];
 
@@ -202,7 +202,7 @@ class CPU {
     });
   }
 
-  pop(instruction, labelTable){
+  pop(instruction, LabelTable){
     return this.checkMatch(/^000001110000(?<register>\d{4})0000000000000000$/, instruction, (values) => {
       const register = BINARY_TO_REGISTER[values["register"]];
 
@@ -213,10 +213,10 @@ class CPU {
     });
   }
 
-  call(instruction, labelTable){
+  call(instruction, LabelTable){
     return this.checkMatch(/^11101000(?<instructionLocation>\d{24})$/, instruction, (values) => {
       const instructionLocation = parseInt(values["instructionLocation"], 2);
-      const labelName = labelTable[instructionLocation];
+      const labelName = LabelTable[instructionLocation];
 
       this.currentInstruction = `call ${labelName}`;
       this.stack.push(`Return Address: ${this.registers['pc']} \n ${labelName}`);
@@ -226,7 +226,7 @@ class CPU {
     });
   }
 
-  ret(instruction, labelTable){
+  ret(instruction, LabelTable){
     return this.checkMatch(/^11000010000000000000000000000000$/, instruction, (values) => {
 
       this.currentInstruction = `ret`;
@@ -238,7 +238,7 @@ class CPU {
     });
   }
 
-  movRegisterToRegister(instruction, labelTable) {
+  movRegisterToRegister(instruction, LabelTable) {
     return this.checkMatch(/^10001001000000000000(?<registerA>\d{4})0000(?<registerB>\d{4})$/, instruction, (values) => {
       const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
       const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
@@ -248,7 +248,7 @@ class CPU {
     });
   }
 
-  movImmediateToRegister(instruction, labelTable) {
+  movImmediateToRegister(instruction, LabelTable) {
     return this.checkMatch(/^110001100000(?<register>\d{4})(?<immediate>\d{16})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const immediateInt = parseInt(values["immediate"], 2);
@@ -258,7 +258,7 @@ class CPU {
     });
   }
 
-  movMemoryToRegister(instruction, labelTable) {
+  movMemoryToRegister(instruction, LabelTable) {
     return this.checkMatch(/^1000101100001111(?<register>\d{4})(?<memory>\d{12})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers["rbp"] + parseInt(values["address"], 2);
@@ -269,7 +269,7 @@ class CPU {
     });
   }
 
-  movArrayElementToRegister(instruction, labelTable) {
+  movArrayElementToRegister(instruction, LabelTable) {
     return this.checkMatch(/^100010111111(?<baseAddrRegister>\d{4})0000(?<register>\d{4})0000(?<offsetRegister>\d{4})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]]
@@ -282,7 +282,7 @@ class CPU {
     });
   }
 
-  movImmediateToMemory(instruction, labelTable) {
+  movImmediateToMemory(instruction, LabelTable) {
     return this.checkMatch(/^1111(?<address>\d{12})(?<immediate>\d{16})$/, instruction, (values) => {
       const address = this.registers["rbp"] + parseInt(values["address"], 2);
       const immediateBinary = values["immediate"].padStart(32,0);
@@ -292,7 +292,7 @@ class CPU {
     });
   }
 
-  movRegisterToMemory(instruction, labelTable) {
+  movRegisterToMemory(instruction, LabelTable) {
     return this.checkMatch(/^1000100111110000(?<address>\d{12})(?<register>\d{4})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers["rbp"] + parseInt(values["address"], 2);
@@ -303,7 +303,7 @@ class CPU {
     });
   }
 
-  addImmediate(instruction, labelTable) {
+  addImmediate(instruction, LabelTable) {
     return this.checkMatch(/^000001010000(?<register>\d{4})(?<immediate>\d{16})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const immediateInt = parseInt(values["immediate"], 2);
@@ -313,7 +313,7 @@ class CPU {
     });
   }
 
-  addRegisters(instruction, labelTable) {
+  addRegisters(instruction, LabelTable) {
     return this.checkMatch(/^00000001000000000000(?<registerA>\d{4})0000(?<registerB>\d{4})$/, instruction, (values) => {
       const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
       const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
@@ -323,7 +323,7 @@ class CPU {
     });
   }
 
-  subImmediate(instruction, labelTable) {
+  subImmediate(instruction, LabelTable) {
     return this.checkMatch(/^001011010000(?<register>\d{4})(?<immediate>\d{16})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const immediateInt = parseInt(values["immediate"], 2);
@@ -333,7 +333,7 @@ class CPU {
     });
   }
 
-  subRegister(instruction, labelTable) {
+  subRegister(instruction, LabelTable) {
     return this.checkMatch(/^00101001000000000000(?<registerA>\d{4})0000(?<registerB>\d{4})$/, instruction, (values) => {
       const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
       const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
@@ -343,7 +343,7 @@ class CPU {
     });
   }
 
-  cmpRegister(instruction, labelTable) {
+  cmpRegister(instruction, LabelTable) {
     return this.checkMatch(/^00111001000000000000(?<registerA>\d{4})0000(?<registerB>\d{4})$/, instruction, (values) => {
       const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
       const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
@@ -361,7 +361,7 @@ class CPU {
     });
   }
 
-  cmpImmediate(instruction, labelTable) {
+  cmpImmediate(instruction, LabelTable) {
     return this.checkMatch(/^001111010000(?<register>\d{4})(?<immediate>\d{16})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const immediateInt = parseInt(values["immediate"], 2);
@@ -379,7 +379,7 @@ class CPU {
     });
   }
 
-  cmpMemory(instruction, labelTable) {
+  cmpMemory(instruction, LabelTable) {
     return this.checkMatch(/^0011101100001111(?<register>\d{4})(?<address>\d{12})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["registerA"]];
       const address = this.registers["rbp"] + parseInt(values["address"], 2);
@@ -398,7 +398,7 @@ class CPU {
     });
   }
 
-  cmpArrayElement(instruction, labelTable) {
+  cmpArrayElement(instruction, LabelTable) {
     return this.checkMatch(/^001110111111(?<baseAddrRegister>\d{4})0000(?<register>\d{4})0000(?<offsetRegister>\d{4})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]]
@@ -418,20 +418,20 @@ class CPU {
     });
   }
 
-  jmp(instruction, labelTable) {
+  jmp(instruction, LabelTable) {
     return this.checkMatch(/^11101001(?<instructionLocation>\d{24})$/, instruction, (values) => {
       const instructionLocation = parseInt(values["instructionLocation"],2);
-      labelName = labelTable[instructionLocation];
+      labelName = LabelTable[instructionLocation];
       this.currentInstruction = `jmp ${labelName}`;
       this.registers["pc"] = instructionLocation;
     });
   }
 
-  jumpConditional(instruction, labelTable) { //First 4 bits same, next 4 are condition
+  jumpConditional(instruction, LabelTable) { //First 4 bits same, next 4 are condition
     return this.checkMatch(/^1000(?<condition>\d{4})(?<instructionLocation>\d{24})$/, instruction, (values) => {
       const condition = values["condition"];
       const instructionLocation = parseInt(values["instructionLocation"],2);
-      labelName = labelTable[instructionLocation];
+      labelName = LabelTable[instructionLocation];
       switch(condition){
         case '1111'://jg
           this.currentInstruction = `jg ${labelName}`;
@@ -470,7 +470,7 @@ class CPU {
   step() {
     this.registers["pc"] += 4;
     nextInstruction = this.memory.getDword(this.registers["pc"]);
-    execute(nextInstruction, labelTable);
+    execute(nextInstruction, LabelTable);
   }
 
   getState() {
