@@ -100,15 +100,15 @@ class Memory {
 }
 
 const BINARY_TO_REGISTER = {
-  "00000000": "eax",
-  "00000001": "ebx",
-  "00000010": "ecx",
-  "00000011": "edx",
-  "00000100": "esi",
-  "00000101": "edi",
-  "00000110": "rsp",
-  "00000111": "rbp",
-  "00001000": "pc"
+  "0000": "eax",
+  "0001": "ebx",
+  "0010": "ecx",
+  "0011": "edx",
+  "0100": "esi",
+  "0101": "edi",
+  "0110": "rsp",
+  "0111": "rbp",
+  "1000": "pc"
 }
 
 // intToNBytes(1337, 2) => "0000010100111001"
@@ -131,8 +131,8 @@ class CPU {
       "zf": 0,  //zero flag: set to 1 if cmp result equal, 1 if not equal
       "sf": 0,  //sign flag: set to 1 if cmp result is negative, 0 if positive
       // TODO: use ebp and esp because they are for 32 bit systems
-      "rbp": 0,
-      "rsp": 0,
+      "rbp": 4096,
+      "rsp": 4096,
 
       // TODO: r** registers are for x64... update compiler to use eax, ecx
       "rax": 0,
@@ -181,7 +181,7 @@ class CPU {
   }
 
   lea(instruction){
-    return this.checkMatch(/^1000110100001111(?<register>\d{8})(?<address>\d{8})$/, instruction, (values) => {
+    return this.checkMatch(/^1000110100001111(?<register>\d{4})(?<address>\d{12})$/, instruction, (values) => {
       const register = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers['rbp'] + parseInt(values["address"], 2);
 
@@ -190,7 +190,7 @@ class CPU {
   }
 
   push(instruction){
-    return this.checkMatch(/^00000110(?<register>\d{8})0000000000000000$/, instruction, (values) => {
+    return this.checkMatch(/^000001100000(?<register>\d{4})0000000000000000$/, instruction, (values) => {
       const register = BINARY_TO_REGISTER[values["register"]];
 
       this.stack.push(this.registers[register])
@@ -198,7 +198,7 @@ class CPU {
   }
 
   pop(instruction){
-    return this.checkMatch(/^00000111(?<register>\d{8})0000000000000000$/, instruction, (values) => {
+    return this.checkMatch(/^000001110000(?<register>\d{4})0000000000000000$/, instruction, (values) => {
       const register = BINARY_TO_REGISTER[values["register"]];
 
       this.registers[register] = this.stack[stack.length-1];
@@ -224,7 +224,7 @@ class CPU {
   }
 
   movRegisterToRegister(instruction) {
-    return this.checkMatch(/^1000100100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction, (values) => {
+    return this.checkMatch(/^10001001000000000000(?<registerA>\d{4})0000(?<registerB>\d{4})$/, instruction, (values) => {
       const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
       const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
 
@@ -233,7 +233,7 @@ class CPU {
   }
 
   movImmediateToRegister(instruction) {
-    return this.checkMatch(/^11000110(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
+    return this.checkMatch(/^110001100000(?<register>\d{4})(?<immediate>\d{16})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const immediateInt = parseInt(values["immediate"], 2);
 
@@ -242,7 +242,7 @@ class CPU {
   }
 
   movMemoryToRegister(instruction) {
-    return this.checkMatch(/^1000101100001111(?<register>\d{8})(?<memory>\d{8})$/, instruction, (values) => {
+    return this.checkMatch(/^1000101100001111(?<register>\d{4})(?<memory>\d{12})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers["rbp"] + parseInt(values["address"], 2);
 
@@ -252,7 +252,7 @@ class CPU {
   }
 
   movArrayElementToRegister(instruction) {
-    return this.checkMatch(/^100010111111(?<baseAddrRegister>\d{4})(?<register>\d{8})(?<offsetRegister>\d{8})$/, instruction, (values) => {
+    return this.checkMatch(/^100010111111(?<baseAddrRegister>\d{4})0000(?<register>\d{4})0000(?<offsetRegister>\d{4})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]]
                     + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]);
@@ -263,7 +263,7 @@ class CPU {
   }
 
   movImmediateToMemory(instruction) {
-    return this.checkMatch(/^11000111(?<address>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
+    return this.checkMatch(/^1111(?<address>\d{12})(?<immediate>\d{16})$/, instruction, (values) => {
       const address = this.registers["rbp"] + parseInt(values["address"], 2);
       const immediateBinary = values["immediate"].padStart(32,0);
 
@@ -272,7 +272,7 @@ class CPU {
   }
 
   movRegisterToMemory(instruction) {
-    return this.checkMatch(/^1000100111110000(?<address>\d{8})(?<register>\d{8})$/, instruction, (values) => {
+    return this.checkMatch(/^1000100111110000(?<address>\d{12})(?<register>\d{4})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers["rbp"] + parseInt(values["address"], 2);
 
@@ -282,7 +282,7 @@ class CPU {
   }
 
   addImmediate(instruction) {
-    return this.checkMatch(/^00000101(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
+    return this.checkMatch(/^000001010000(?<register>\d{4})(?<immediate>\d{16})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const immediateInt = parseInt(values["immediate"], 2);
 
@@ -291,7 +291,7 @@ class CPU {
   }
 
   addRegisters(instruction) {
-    return this.checkMatch(/^0000000100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction, (values) => {
+    return this.checkMatch(/^00000001000000000000(?<registerA>\d{4})0000(?<registerB>\d{4})$/, instruction, (values) => {
       const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
       const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
 
@@ -300,7 +300,7 @@ class CPU {
   }
 
   subImmediate(instruction) {
-    return this.checkMatch(/^00101101(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
+    return this.checkMatch(/^001011010000(?<register>\d{4})(?<immediate>\d{16})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const immediateInt = parseInt(values["immediate"], 2);
 
@@ -309,7 +309,7 @@ class CPU {
   }
 
   subRegister(instruction) {
-    return this.checkMatch(/^0010100100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction, (values) => {
+    return this.checkMatch(/^00101001000000000000(?<registerA>\d{4})0000(?<registerB>\d{4})$/, instruction, (values) => {
       const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
       const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
 
@@ -318,7 +318,7 @@ class CPU {
   }
 
   cmpRegister(instruction) {
-    return this.checkMatch(/^0011100100000000(?<registerA>\d{8})(?<registerB>\d{8})$/, instruction, (values) => {
+    return this.checkMatch(/^00111001000000000000(?<registerA>\d{4})0000(?<registerB>\d{4})$/, instruction, (values) => {
       const registerNameA = BINARY_TO_REGISTER[values["registerA"]];
       const registerNameB = BINARY_TO_REGISTER[values["registerB"]];
 
@@ -334,7 +334,7 @@ class CPU {
   }
 
   cmpImmediate(instruction) {
-    return this.checkMatch(/^00111101(?<register>\d{8})(?<immediate>\d{16})$/, instruction, (values) => {
+    return this.checkMatch(/^001111010000(?<register>\d{4})(?<immediate>\d{16})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const immediateInt = parseInt(values["immediate"], 2);
 
@@ -350,7 +350,7 @@ class CPU {
   }
 
   cmpMemory(instruction) {
-    return this.checkMatch(/^0011101100001111(?<register>\d{8})(?<address>\d{8})$/, instruction, (values) => {
+    return this.checkMatch(/^0011101100001111(?<register>\d{4})(?<address>\d{12})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["registerA"]];
       const address = this.registers["rbp"] + parseInt(values["address"], 2);
       const value = parseInt(getDword(address));
@@ -367,7 +367,7 @@ class CPU {
   }
 
   cmpArrayElement(instruction) {
-    return this.checkMatch(/^001110111111(?<baseAddrRegister>\d{4})(?<register>\d{8})(?<offsetRegister>\d{8})$/, instruction, (values) => {
+    return this.checkMatch(/^001110111111(?<baseAddrRegister>\d{4})0000(?<register>\d{4})0000(?<offsetRegister>\d{4})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]]
                     + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]);
