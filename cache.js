@@ -1,10 +1,3 @@
-// Split apart data and instruction cache for xtra points
-// use a system bus to bring blocks to CPU for extra points
-/* Cache object modeling 32 bit system */
-// 5/7 project 2 deadline
-// final exam 5/14 deadline
-// implement N way set association
-// 
 class Cache {
     /* 
         nway: the degree of set association
@@ -17,8 +10,7 @@ class Cache {
         this.k = k;
         this.nway = nway;
         this.bits = bits;
-        this.missData = { misses: 0, total: 0 };
-        this.replacementData = { replcements: 0, total: 0 };
+        this.statistics = { accesses: 0, misses: 0, total: 0 };
         this.cache = Array.from({length: nway},
             () => Array.from({length: size},
                 () => Array.from({length: k},
@@ -43,7 +35,7 @@ class Cache {
             return data; // should return the data not the address
         }
         // pull from memory
-        const data = this.memory.get(address);
+        const data = this.memory.getDword(address);
         this.write({address: address, data: data, memwrite: false}); // no memwrite
         return data;
     }
@@ -62,7 +54,7 @@ class Cache {
             this.cache[setIndex][index][offset].data = `${1}${tag}${data}`;
         }
         this.updateTimes({ setIndex: setIndex, index: index, offset: offset });
-        if (memwrite) this.memory.set(address, data); // write through //
+        if (memwrite) this.memory.setDword(address, data); // write through //
     }
 
     // searches n-way cache and returns the i'th cache if data exists in cache, else returns -1
@@ -130,12 +122,12 @@ class Cache {
                 maxIndices.setIndex = i;
             }
         // if replacing write replaced one to memory
-
+        this.recordReplacement();
         return maxIndices;
     }
 
     // increments all times in the cache, and resets the time at provided indices
-    updateTimes({ setIndex, index, offset}) {
+    updateTimes({ setIndex, index, offset }) {
         for (let i = 0; i < this.cache.length; i++)
             for (let j = 0; j < this.cache[i].length; j++)
                 for (let k = 0; k < this.cache[i][j].length; k++)
@@ -145,18 +137,17 @@ class Cache {
     }
 
     recordReplacement() {
-        this.replacementData.replacements++;
-        this.replacementData.total++;
+        this.statistics.replacements++;
+        this.statistics.total++;
     }
 
     recordMiss() {
-        this.missData.misses++;
-        this.missData.total++;
+        this.statistics.misses++;
+        this.statistics.total++;
     }
 
     recordAccess() {
-        this.missData.total++;
-        this.replacementData.total++;
+        this.statistics.total++;
     }
 
     getReplacementRate() {
