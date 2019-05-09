@@ -1,7 +1,7 @@
 class ExternalStorage {
-  constructor() {
+  constructor(capacityBytes) {
     // Stores a string of bits
-    this.storage = "";
+    this.storage = "0".repeat(capacityBytes * 8);
   }
 
   load(data) {
@@ -10,7 +10,7 @@ class ExternalStorage {
 
   // returns the 32 bits (dword) at address
   getDword(address) {
-    const dwordStart = address * 4 * 8;
+    const dwordStart = address * 32;
     this.checkBounds(dwordStart);
 
     return this.storage.slice(dwordStart, dwordStart + 32);
@@ -18,14 +18,16 @@ class ExternalStorage {
 
   // sets the 32 bit string dword at the address
   setDword(address, dword) {
-    const dwordStart = address * 4 * 8;
+    const dwordStart = address * 32;
     this.checkBounds(dwordStart);
 
-    this.storage.splice(dwordStart, 32, dword);
+    let k = this.storage.split("");
+    k.splice(dwordStart, 32, dword);
+    this.storage = k.join("");
   }
 
   checkBounds(dwordStart) {
-    if (dwordStart + 32 >= this.storage.length) {
+    if (dwordStart + 32 > this.storage.length) {
       throw new Error("Out of bounds external storage access.");
     }
   }
