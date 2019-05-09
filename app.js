@@ -12,6 +12,7 @@ function fillTable(table, data){
   table.innerHTML = text;
 }
 
+// displays the registers
 function fillRegisters(table, registers) {
   let text = "<tr>";
   const keys = Object.keys(registers);
@@ -24,6 +25,7 @@ function fillRegisters(table, registers) {
   table.innerHTML = text;
 }
 
+// displays the cache
 function fillCache(table, cache) {
   let text = "<tr>";
   for (let r = 0; r < cache[0].length; r++) {
