@@ -44,13 +44,13 @@ function isNumber(string) {
   return !nan;
 }
 
-// group array components in an assignment line and return the modified assignment line 
+// group array components in an assignment line and return the modified assignment line
 function groupArray(assignmentLine) {
   let stk = [];
   // treat back of array like a stack
   // go from the front of the assignment line
   // if we see [ then push to the array
-  // until we see ] we add elements of the line to between 
+  // until we see ] we add elements of the line to between
   let between = '';
   for (let i = 0; i < assignmentLine.length; i++) {
     let curr = assignmentLine[i];
@@ -130,7 +130,7 @@ class Parser {
                 value: declarationLine[5],
                 type: "address",
                 order: 0,
-                dataType: "int *"
+                dataType: "int*"
               })
             ]
           })
@@ -200,7 +200,7 @@ class Parser {
                 value: assignmentLine[4],
                 type: "address",
                 order: 0,
-                dataType: "int *"
+                dataType: "int*"
               })
             ]
           })

@@ -31,13 +31,13 @@ mov memory, register
 mov register, memory
 [1000 1011][0000 1111][xxxx][yyyy yyyy yyyy]
 mov register, reg+4*reg
-[1000 1011][1111 XXXX][xxxx xxxx][XXXX XXXX]
+[1000 1011][1111 XXXX][0000 xxxx][0000 XXXX]
 mov register, immediate
 [1100 0110][0000 xxxx][zzzz zzzz zzzz zzzz]
 mov memory, memory
 //Can't do memory to memory
 mov memory, immediate
-[1100 0111][yyyy yyyy yyyy][zzzz zzzz zzzz]
+[1111][yyyy yyyy yyyy][zzzz zzzz zzzz zzzz]
 add register, register
 [0000 0001][0000 0000][0000 xxxx][0000 xxxx]
 add register, immediate
