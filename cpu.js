@@ -343,11 +343,6 @@ class Computer {
   }
 }
 
-machineCode = compile();
-c = new Computer();
-c.loadProgram(machineCode)
-c.execute();
-
 const BINARY_TO_REGISTER = {
   "0000": "eax",
   "0001": "ebx",
