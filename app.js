@@ -74,22 +74,6 @@ function toBinary(sourceCode, fillTable){
   fillTable(table, externalStorage);
 }
 
-//Converts input to ASCII binary and populates
-//the source code part of the External Storage
-function toASCII(sourceCode, externalStorage) {
-  sourceCode.forEach(function(element){
-    if(element === 'int' || element === 'return'){
-      element += ' ';
-    }
-    for(let i=0; i<element.length; i++){
-      binaryChar = element.charCodeAt(i).toString(2);
-      externalStorage.push(binaryChar.padStart(8,"0"));
-    }
-  });
-  while(externalStorage.length < 1024)
-    externalStorage.push('00000000');
-}
-
 function compile(string) {
   const tokens = tokenize(string);
   const parser = new Parser(tokens);
@@ -132,10 +116,10 @@ $(document).ready(function() {
   });
   $('.button-initialize').click(function(){ // initialize computer object here
     const cacheSpecs = {
-      nway: $('#nway').first().val(),
-      size: $('#cache-size').first().val(),
-      blockSize: $('#block-size').first().val(),
-    }
+      nway: Number.parseInt($('#nway').first().val().trim()),
+      size: Number.parseInt($('#cache-size').first().val().trim()),
+      blockSize: Number.parseInt($('#block-size').first().val().trim()),
+    };
   });
   $('.button-step').click(function(){
     step();
