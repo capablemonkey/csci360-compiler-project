@@ -1,5 +1,6 @@
 //Formats the data in an array of 1024 strings into an 8x128 table
 //then inserts the HTML code into element
+
 function fillTable(table, data){
   let text = "<tr>";
   for(let i=0; i<1024; i++){
@@ -46,11 +47,12 @@ function fillMemory(table, memory) {
 
 }
 
-function fillStatistics(field, cache) {
+function fillStatistics(table, cache) {
   let text = "<tr><td> Miss Rate </td></tr>";
   text += "<tr><td> " + cache.getMissRate() + "</td></tr>";
-  let text = "<tr><td> Replacement Rate </td></tr>";
+  text += "<tr><td> Replacement Rate </td></tr>";
   text += "<tr><td> " + cache.getReplacementRate() + "</td></tr>";
+  table.innerHTML = text;
 }
 
 //Converts input to ASCII binary and populates
@@ -70,6 +72,22 @@ function toBinary(sourceCode, fillTable){
   while(externalStorage.length < 1024)
     externalStorage.push('00000000');
   fillTable(table, externalStorage);
+}
+
+//Converts input to ASCII binary and populates
+//the source code part of the External Storage
+function toASCII(sourceCode, externalStorage) {
+  sourceCode.forEach(function(element){
+    if(element === 'int' || element === 'return'){
+      element += ' ';
+    }
+    for(let i=0; i<element.length; i++){
+      binaryChar = element.charCodeAt(i).toString(2);
+      externalStorage.push(binaryChar.padStart(8,"0"));
+    }
+  });
+  while(externalStorage.length < 1024)
+    externalStorage.push('00000000');
 }
 
 function compile(string) {
@@ -99,16 +117,26 @@ function step(computer) {
 $(document).ready(function() {
   $('.button-compile').click(function(){
     const input = $('.editor-textbox').first().val();
-    const {parseTree, output, tokens} = compile(input);
     const tokens = tokenize(input);
-    const externalStorage = [];
-    toASCII(tokens, externalStorage);
+    const asciiStorage = [];
+    toASCII(tokens, asciiStorage);
     const {parseTree, output} = compile(tokens);
+    const LabelTable = {};
+    const allInstructions = parseAss(output,LabelTable);
+    const machineCodeStorage = translateInstructions(allInstructions, LabelTable);
+    const externalStorage = [].concat(asciiStorage, machineCodeStorage);
     fillTable(document.getElementById('external-source'), externalStorage);
+
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
     $('#assembly').text(output);
-    toBinary(tokens, fillTable);
-  })
+  });
+  $('.button-initialize').click(function(){ // initialize computer object here
+    const cacheSpecs = {
+      nway: $('#nway').first().val(),
+      size: $('#cache-size').first().val(),
+      blockSize: $('#block-size').first().val(),
+    }
+  });
   $('.button-step').click(function(){
     step();
     // This should be all be in a computer object
@@ -119,5 +147,6 @@ $(document).ready(function() {
     //fillRegisters(document.getElementById('registers'), registers);
     //fillCache(document.getElementById('cache'), cache.cache);
     //fillMemory(document.getElementById('memory'), );
-  })
+  });
+  
 })
