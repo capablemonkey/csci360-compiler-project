@@ -46,6 +46,13 @@ function fillMemory(table, memory) {
 
 }
 
+fillStatistics(field, cache) {
+  let text = "<tr><td> Miss Rate </td></tr>";
+  text += "<tr><td> " + cache.getMissRate() + "</td></tr>";
+  let text = "<tr><td> Replacement Rate </td></tr>";
+  text += "<tr><td> " + cache.getReplacementRate() + "</td></tr>";
+}
+
 //Converts input to ASCII binary and populates
 //the source code part of the External Storage
 function toBinary(sourceCode, fillTable){
