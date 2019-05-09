@@ -81,6 +81,14 @@ function toBinaryOperand(operand) {
   return number;
 }
 
+function findInstructionNumber(LabelTable, labelName) {
+  keys = Object.keys(LabelTable);
+  for(i=0; i<keys.length; i++){
+    if(LabelTable[keys[i]] === labelName)
+      return keys[i].toString(10);
+  }
+}
+
 class ASMInstruction {
   constructor(op, operand1 = null, operand2 = null) {
     this.op = op;
@@ -222,36 +230,43 @@ class ASMInstruction {
         break;
       }
       case 'jmp':{
+        this.operand1.value = findInstructionNumber(LabelTable, this.operand1.value);
         const instAddress = toBinaryOperand(this.operand1);
         machineCode = `11101001${instAddress}`;
         break;
       }
       case 'jg':{
+        this.operand1.value = findInstructionNumber(LabelTable, this.operand1.value);
         const instAddress = toBinaryOperand(this.operand1);
         machineCode = `10001111${instAddress}`;
         break;
       }
       case 'jl':{
+        this.operand1.value = findInstructionNumber(LabelTable, this.operand1.value);
         const instAddress = toBinaryOperand(this.operand1);
         machineCode = `10001100${instAddress}`;
         break;
       }
       case 'je':{
+        this.operand1.value = findInstructionNumber(this.operand1.value);
         const instAddress = toBinaryOperand(this.operand1);
         machineCode = `10000100${instAddress}`;
         break;
       }
       case 'jge':{
+        this.operand1.value = findInstructionNumber(LabelTable, this.operand1.value);// console.log(this.operand1.value);
         const instAddress = toBinaryOperand(this.operand1);
         machineCode = `10001101${instAddress}`;
         break;
       }
       case 'jle':{
+        this.operand1.value = findInstructionNumber(LabelTable, this.operand1.value);
         const instAddress = toBinaryOperand(this.operand1);
         machineCode = `10001110${instAddress}`;
         break;
       }
       case 'jne':{
+        this.operand1.value = findInstructionNumber(LabelTable, this.operand1.value);
         const instAddress = toBinaryOperand(this.operand1);
         machineCode = `10000101${instAddress}`;
         break;
@@ -273,6 +288,13 @@ class ASMInstruction {
         break;
       }
       case 'call':{
+        for(let i=0; i<this.operand1.value.length; i++){
+          if(this.operand1.value[i] === '('){
+            this.operand1.value = this.operand1.value.slice(0, i+1);
+          }
+        }
+        this.operand1.value += ')';
+        this.operand1.value = findInstructionNumber(LabelTable, this.operand1.value);
         const instAddress = toBinaryOperand(this.operand1);
         machineCode = `11101000${instAddress}`;
         break;
@@ -306,4 +328,54 @@ function translateInstructions(instArray, LabelTable) {
     externalMachineCode.push('00000000');
   }
   return externalMachineCode;
+}
+
+function parseAss(assembly, LabelTable) {
+  const operators = ['mov', 'add', 'sub', 'cmp',
+                    'jmp', 'jg', 'jl', 'je',
+                    'jge', 'jle', 'jne', 'lea',
+                    'push', 'pop', 'ret', 'call'];
+  const instArray = [];
+  assembly = assembly.split('\n');
+  for(let i=0; i<assembly.length; i++){
+    let line = assembly[i].split(' ');
+    let op = null; let operand1 = null; let operand2 = null;
+    if(operators.includes(line[0])) //If the first word is an operator
+      op = line[0];
+    else { //It is a label e.g. .LABEL: or function():
+      op = 'label';
+      operand1 = labelOperand(i);
+      LabelTable[i] = line[0].slice(0,line[0].length-1);  //Record the instruction number and label name
+    }
+    for(let j = 1; j<line.length; j++){
+      if(line[j].includes(','))
+        line[j] = line[j].substring(0, line[j].length-1);
+      if(Registers.hasOwnProperty(line[j]))//It's a register
+        operand = registerOperand(line[j]);
+      else if(line[j] === 'DWORD'){//It's a memory access
+        j+=2;
+        if(line[j].includes(','))
+          line[j] = line[j].substring(0, line[j].length-1);
+        if(!line[j].includes('+4*')){//rbp-4
+          addressOffset = line[j].slice(4, line[j].length-1);
+          operand = memoryOperand(addressOffset);
+        }
+        else {//rcx+4*rdx
+          address = line[j].slice(1, line[j].length-1);
+          operand = memoryOperand(address);
+        }
+      }
+      else if(!isNaN(line[j]))//It's an immediate
+        operand = immediateOperand(line[j]);
+      else {//It's a label
+        operand = labelOperand(line[j]);
+      }
+      if(operand1 === null)
+        operand1 = operand;
+      else
+        operand2 = operand;
+    }//console.log(op, operand1, operand2);
+    instArray.push(new ASMInstruction(op, operand1, operand2));
+  }
+  return instArray;
 }

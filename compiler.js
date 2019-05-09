@@ -22,7 +22,7 @@ class Operand extends Node {
     switch (this.type) {
       case 'variable':
         const address = symbolTable[this.value] * -1;
-        return `DWORD PTR [rbp - ${address}]`;
+        return `DWORD PTR [rbp-${address}]`;
       case 'register':
         return this.value;
       case 'immediate':
@@ -55,12 +55,12 @@ class CallerArgument extends Node {
     switch (this.type) {
       case 'variable':
         address = symbolTable[this.value] * -1;
-        return [`mov eax, DWORD PTR [rbp - ${address}]`, `mov ${argumentRegister}, eax`];
+        return [`mov eax, DWORD PTR [rbp-${address}]`, `mov ${argumentRegister}, eax`];
       case 'immediate':
         return `mov ${argumentRegister} ${this.value}`;
       case 'address': // handles references & pointers
         address = symbolTable[this.value] * -1;
-        return [`lea rax, [rbp - ${address}]`, `mov ${argumentRegister}, rax`];
+        return [`lea rax, [rbp-${address}]`, `mov ${argumentRegister}, rax`];
       default:
         throw `Invalid argument type: ${this.type}`;
     }
@@ -78,7 +78,7 @@ class ArrayElement extends Node {
   toAssembly(symbolTable) {
     if (!this.foreign) {
       const address = (symbolTable[this.name] + this.index * INT_SIZE) * -1;
-      return `DWORD PTR [rbp - ${address}]`;
+      return `DWORD PTR [rbp-${address}]`;
     } else {
       // TODO: refactor me so that ArrayElement doesn't return either a list of instructions or an operand
       // TODO: refactor me so that this.index isn't either a number or a variable name
@@ -86,10 +86,10 @@ class ArrayElement extends Node {
       const indexAddress = symbolTable[this.index] * -1;
       return {
         preInstructions: [
-          `mov rcx, DWORD PTR [rbp - ${baseAddress}]`,
-          `mov rdx, DWORD PTR [rbp - ${indexAddress}]`
+          `mov rcx, DWORD PTR [rbp-${baseAddress}]`,
+          `mov rdx, DWORD PTR [rbp-${indexAddress}]`
         ],
-          resultOperand: 'DWORD PTR [rcx + 4*rdx]'
+          resultOperand: 'DWORD PTR [rcx+4*rdx]'
         }
     }
   }

@@ -28,11 +28,6 @@ function toASCII(sourceCode, externalStorage) {
     externalStorage.push('00000000');
 }
 
-function toTable(sourceCode, fillTable){
-  const table = document.getElementById('external-source');
-  fillTable(table, externalStorage);
-}
-
 function compile(tokens) {
   const parser = new Parser(tokens);
   const parseTree = parser.parse();
@@ -56,11 +51,13 @@ $(document).ready(function() {
   $('.button-compile').click(function(){
     const input = $('.editor-textbox').first().val();
     const tokens = tokenize(input);
-    const externalStorage = [];
-    toASCII(tokens, externalStorage);
+    const asciiStorage = [];
+    toASCII(tokens, asciiStorage);
     const {parseTree, output} = compile(tokens);
-    //const allInstructions = //Parse output;
-    //externalStorage.concat(translateInstructions(allInstructions));
+    const LabelTable = {};
+    const allInstructions = parseAss(output,LabelTable);
+    const machineCodeStorage = translateInstructions(allInstructions, LabelTable);
+    const externalStorage = [].concat(asciiStorage, machineCodeStorage);
     fillTable(document.getElementById('external-source'), externalStorage);
 
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
