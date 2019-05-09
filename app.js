@@ -46,7 +46,7 @@ function fillMemory(table, memory) {
 
 }
 
-fillStatistics(field, cache) {
+function fillStatistics(field, cache) {
   let text = "<tr><td> Miss Rate </td></tr>";
   text += "<tr><td> " + cache.getMissRate() + "</td></tr>";
   let text = "<tr><td> Replacement Rate </td></tr>";
@@ -114,8 +114,9 @@ $(document).ready(function() {
     // This should be all be in a computer object
     //const cpu = new CPU();
     //const registers = cpu.registers;
-    //fillRegisters(document.getElementById('registers'), registers);
     //const cache = new Cache();
+    //fillStatistics(document.getElementById('statistics', cache))
+    //fillRegisters(document.getElementById('registers'), registers);
     //fillCache(document.getElementById('cache'), cache.cache);
     //fillMemory(document.getElementById('memory'), );
   })

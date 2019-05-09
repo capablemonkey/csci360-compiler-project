@@ -25,3 +25,8 @@
   height: 400px;
   overflow-y: scroll;
 }
+
+.sm-output {
+  height: 50px;
+  overflow-y: scroll;
+}
