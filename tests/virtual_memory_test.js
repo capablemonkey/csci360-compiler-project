@@ -20,7 +20,7 @@ describe("virtual memory", () => {
 
     const machineCode = "10101010".repeat(15872);
     es.load("10000000000000000000000000000001" + machineCode);
-    vm.loadProgram(0, machineCode, 15872);
+    vm.loadProgram(0, 0, 15872);
 
     expect(vm.getDword(0, 0)).to.equal("10000000000000000000000000000001");
   });
