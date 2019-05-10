@@ -10,7 +10,7 @@ describe("virtual memory", () => {
     pm.setDword(63, "10101111000000001010101000000001");
 
     // retrieve the last dword in virtual memory and it should be the same
-    expect(vm.getDword(0, 4095), "10101111000000001010101000000001");
+    expect(vm.getDword(0, 1023), "10101111000000001010101000000001");
   });
 
   it("loads program correctly and can retrieve first page", () => {
@@ -55,13 +55,13 @@ describe("virtual memory", () => {
     vm.allocateStack(0);
 
     // set last dword in virtual memory
-    vm.setDword(0, 4095, "10101111000000001010101000000001");
+    vm.setDword(0, 1023, "10101111000000001010101000000001");
 
     // retrieve the last dword in physical memory and it should be the same
     expect(pm.getDword(255), "10101111000000001010101000000001");
 
     // the last dword in virtual memory should also be the same
-    expect(vm.getDword(0, 4095), "10101111000000001010101000000001");
+    expect(vm.getDword(0, 1023), "10101111000000001010101000000001");
   });
 
   it("should evict the correct code page in physical memory when out of space");
