@@ -145,6 +145,7 @@ $(document).ready(function() {
     const machineCodeStorage = translateInstructions(allInstructions, LabelTable).join("");
     computer = new Computer(LabelTable);
     computer.loadProgram(machineCodeStorage);
+    computer.start();
   });
   $('.button-step').click(function(){
     step(computer);
