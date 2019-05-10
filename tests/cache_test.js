@@ -2,9 +2,16 @@ describe("cache", () => {
     describe("write", () => {
         // read test
         it("Should write to cache and read the values", () => {
-            const memory = new Map();
-            const cache = new Cache({ nway: 1, size: 8, k: 2, memory: memory, bits: 16 });
-            const address = '0000000000000000';
+            const pm = new PhysicalMemory(1024, 4);
+            const es = new ExternalStorage(8192);
+            const vm = new VirtualMemory(pm, es, 4);
+
+            const machineCode = "10101010".repeat(15872);
+            es.load(machineCode);
+            vm.loadProgram(0, 0, 15872);
+
+            const cache = new Cache({ nway: 1, size: 8, k: 2, memory: vm, bits: 12 });
+            const address = '111111111111';
             cache.setDword({ address: address, data: '00000000000000000000000000000001', memwrite: true });
             expect(cache.getDword({ address: address })).to.equal("00000000000000000000000000000001");
         });
@@ -12,7 +19,7 @@ describe("cache", () => {
         // check memory.get == what I want 
         it("Should write through to memory", () => {
             const memory = new Map();
-            const cache = new Cache({ nway: 1, size: 8, k: 2, memory: memory, bits: 16 });
+            const cache = new Cache({ nway: 1, size: 8, k: 2, memory: memory, bits: 12 });
             const address = '0000000000000000';
             cache.setDword({ address: address, data: '00000000000000000000000000000001', memwrite: true });
             expect(cache.getDword({ address: address })).to.equal(cache.memory.get(address));
@@ -22,7 +29,7 @@ describe("cache", () => {
         it("Should detect cache hits", () => {
             const memory = new Map();
             // initalize a small cache
-            const cache = new Cache({ nway: 1, size: 2, k: 1, memory: memory, bits: 16 });
+            const cache = new Cache({ nway: 1, size: 2, k: 1, memory: memory, bits: 12 });
             // initialize two addresses that map to the same index and offset
             const address = '0000000000000000';
             // initialize different data that maps to the same set, index, and offset
@@ -37,7 +44,7 @@ describe("cache", () => {
         it("Should do LRU replacement", () => {
             const memory = new Map();
             // initalize a small cache
-            const cache = new Cache({ nway: 1, size: 2, k: 1, memory: memory, bits: 16 });
+            const cache = new Cache({ nway: 1, size: 2, k: 1, memory: memory, bits: 12 });
             // initialize two addresses that map to the same index and offset
             const address = '0000000000000000';
             const otherAddress = '0100000000000010';

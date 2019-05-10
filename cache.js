@@ -56,7 +56,8 @@ class Cache {
     setDword({  address, data, memwrite = true }) {
         const { index, offset, tag } = this.extractBits(address);
         const setIndex = this.isCacheHit(address);
-        
+        const decimalAddress = this.toDecimal(address);
+
         if (setIndex >= 0) { // already in the cache, update it there
             this.cache[setIndex][index][offset].data = `${1}${tag}${data}`;
             this.recordAccess();
@@ -65,7 +66,7 @@ class Cache {
             this.cache[setIndex][index][offset].data = `${1}${tag}${data}`;
         }
         this.updateTimes({ setIndex: setIndex, index: index, offset: offset });
-        if (memwrite) this.memory.setDword(address, data); // write through //
+        if (memwrite) this.memory.setDword(0, decimalAddress, data); // write through //
     }
 
     // searches n-way cache and returns the i'th cache if data exists in cache, else returns -1
