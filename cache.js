@@ -24,7 +24,7 @@ class Cache {
         this.memory = memory;
     }
 
-    read({ address }) {
+    getDword({ address }) {
         const setIndex = this.isCacheHit(address);
         if (setIndex >= 0) { // if it was found
             const { index, offset, tag } = this.extractBits(address);
@@ -36,12 +36,17 @@ class Cache {
         }
         // pull from memory
         const data = this.memory.getDword(address);
-        this.write({address: address, data: data, memwrite: false}); // no memwrite
+        // translate to decimal
+        // go to start of block
+        // iterate k forward
+        // load all into blocks
+        this.recordMiss();
+        this.setDword({address: address, data: data, memwrite: false}); // no memwrite
         return data;
     }
 
     // writes a piece of data from an address to the cache
-    write({  address, data, memwrite = true }) {
+    setDword({  address, data, memwrite = true }) {
         const { index, offset, tag } = this.extractBits(address);
         const setIndex = this.isCacheHit(address);
         
@@ -49,7 +54,6 @@ class Cache {
             this.cache[setIndex][index][offset].data = `${1}${tag}${data}`;
             this.recordAccess();
         } else { // not in the cache, we need to bring it into the cache 
-            this.recordMiss();
             const {setIndex, offset} = this.lruReplacement({ address: address });
             this.cache[setIndex][index][offset].data = `${1}${tag}${data}`;
         }
@@ -116,6 +120,7 @@ class Cache {
         for (let i = 0; i < this.cache.length; i++) // for every set
             if (this.cache[i][index][offset].data[0] == 0) { // if valid bit == 0, nothing at this index
                 maxIndices.setIndex = i;
+                this.recordMiss();
                 return maxIndices;
             } else if (maxTime < this.cache[i][index][offset].time) {
                 maxTime = this.cache[i][index][offset].time;
