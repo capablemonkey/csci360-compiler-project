@@ -20,7 +20,6 @@ describe("cache", () => {
 
         // isCacheHit test
         it("Should detect cache hits", () => {
-            console.log("STARTING LRU TEST");
             const memory = new Map();
             // initalize a small cache
             const cache = new Cache({ nway: 1, size: 2, k: 1, memory: memory, bits: 16 });
@@ -36,7 +35,6 @@ describe("cache", () => {
 
         // LRU replacement test
         it("Should do LRU replacement", () => {
-            console.log("STARTING LRU TEST");
             const memory = new Map();
             // initalize a small cache
             const cache = new Cache({ nway: 1, size: 2, k: 1, memory: memory, bits: 16 });

@@ -1,0 +1,21 @@
+
+void doNothing() {
+	int a = 0;
+	int b = 1;
+
+	int tmp = a;
+	a = b;
+	b = tmp;
+
+	for (int i = 0; i < 5; i++) {
+		int tmp = a;
+		a = b;
+		b = tmp;
+	}
+	
+}
+
+int main () {
+	doNothing();
+	return 0;
+}

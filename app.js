@@ -1,5 +1,6 @@
 //Formats the data in an array of 1024 strings into an 8x128 table
 //then inserts the HTML code into element
+
 function fillTable(table, data){
   let text = "<tr>";
   for(let i=0; i<2048; i++){
@@ -9,6 +10,51 @@ function fillTable(table, data){
       text += "</tr><tr>";  //New row
   }
   text += "</tr>";
+  table.innerHTML = text;
+}
+
+// displays the registers
+function fillRegisters(table, registers) {
+  let text = "<tr>";
+  const keys = Object.keys(registers);
+  for (let i = 0; i < keys.length; i++) {
+    const reg = keys[i];
+    text += "<td>" + reg + " : " + registers[key] + "</td>";
+    text += "</tr><tr>";
+  }
+  text += "</tr>";
+  table.innerHTML = text;
+}
+
+// displays the cache
+function fillCache(table, cache) {
+  let text = "<tr>";
+  const rows = cache[0].length;
+  const sets = cache.length;
+  for (let r = 0; r < rows; r++) { //  1 1    0 0
+    for (let s = 0; s < sets; s++) {  //  1 1    0 0
+      for (let b = 0; b < cache[s][r].length; b++) {
+        text += "<td>" + cache[s][r][b] + "  </td>";
+      }
+      text += "<td>    </td>"; // gap between sets
+    }
+    text += "</tr><tr>";
+  }
+  text += "</tr>";
+  table.innerHTML = text;
+}
+
+// not sure how memory is structured so 
+function fillMemory(table, memory) {
+  let text = "<tr>";
+  
+}
+
+function fillStatistics(table, cache) {
+  let text = "<tr><td> Miss Rate </td></tr>";
+  text += "<tr><td> " + cache.getMissRate() + "</td></tr>";
+  text += "<tr><td> Replacement Rate </td></tr>";
+  text += "<tr><td> " + cache.getReplacementRate() + "</td></tr>";
   table.innerHTML = text;
 }
 
@@ -47,6 +93,10 @@ function compile(tokens) {
   };
 }
 
+function step(computer) {
+  computer.cpu.step();
+}
+
 $(document).ready(function() {
   $('.button-compile').click(function(){
     const input = $('.editor-textbox').first().val();
@@ -62,5 +112,24 @@ $(document).ready(function() {
 
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
     $('#assembly').text(output);
-  })
+  });
+  $('.button-initialize').click(function(){ // initialize computer object here
+    const cacheSpecs = {
+      nway: Number.parseInt($('#nway').first().val().trim()),
+      size: Number.parseInt($('#cache-size').first().val().trim()),
+      blockSize: Number.parseInt($('#block-size').first().val().trim()),
+    };
+  });
+  $('.button-step').click(function(){
+    step();
+    // This should be all be in a computer object
+    //const cpu = new CPU();
+    //const registers = cpu.registers;
+    //const cache = new Cache();
+    //fillStatistics(document.getElementById('statistics', cache))
+    //fillRegisters(document.getElementById('registers'), registers);
+    //fillCache(document.getElementById('cache'), cache.cache);
+    //fillMemory(document.getElementById('memory'), );
+    //fillStack(document.getElementById('stack'), );
+  });
 })
