@@ -215,7 +215,7 @@ class CPU {
       this.currentInstruction = `push ${register}`;
       this.stack.push(`${register}: ${this.registers[register]}`);
       this.registers['rsp'] -= 4;
-      this.memory.setDword({address: this.registers['rsp'], data: intToNBytes(this.registers[register], 32)});
+      this.memory.setDword({address: this.registers['rsp'], data: intToNBytes(this.registers[register], 4)});
     });
   }
 
@@ -238,7 +238,7 @@ class CPU {
       this.currentInstruction = `call ${labelName}`;
       this.stack.push(`Return Address: ${this.registers['pc']} \n ${labelName}`);
       this.registers['rsp'] -= 4;
-      this.memory.setDword({address: this.registers['rsp'], data: intToNBytes(this.registers['pc'], 32)});
+      this.memory.setDword({address: this.registers['rsp'], data: intToNBytes(this.registers['pc'], 4)});
       this.registers['pc'] = instructionLocation;
     });
   }
