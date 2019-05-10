@@ -98,6 +98,9 @@ class Cache {
     }
 
     getOffset(address) {
+        if (this.k == 1) {
+            return 0;
+        }
         const offsetBinary = address.substring(address.length - (Math.log(this.k) / Math.log(2)));
         return this.toDecimal(offsetBinary);
     }
@@ -108,11 +111,7 @@ class Cache {
     }
 
     toDecimal(address) {
-        let dec = 0;
-        for (let i = address.length-1; i >= 0; i--) {
-            let pow = 32 - i;
-            dec += Number(address[i]) * Math.pow(2, pow);
-        } return dec;
+        return parseInt(address, 2);
     }
 
     // horizontally prints a snapshot of the entire cache

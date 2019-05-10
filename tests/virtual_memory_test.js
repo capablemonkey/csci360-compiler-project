@@ -10,7 +10,7 @@ describe("virtual memory", () => {
     pm.setDword(63, "10101111000000001010101000000001");
 
     // retrieve the last dword in virtual memory and it should be the same
-    expect(vm.getDword(0, 1023), "10101111000000001010101000000001");
+    expect(vm.getDword(0, 4092), "10101111000000001010101000000001");
   });
 
   it("loads program correctly and can retrieve first page", () => {
@@ -18,9 +18,9 @@ describe("virtual memory", () => {
     const es = new ExternalStorage(8192);
     const vm = new VirtualMemory(pm, es, 4);
 
-    const machineCode = "10101010".repeat(15872);
+    const machineCode = "10101010".repeat(4096);
     es.load("10000000000000000000000000000001" + machineCode);
-    vm.loadProgram(0, 0, 15872);
+    vm.loadProgram(0, 0, 4096);
 
     expect(vm.getDword(0, 0)).to.equal("10000000000000000000000000000001");
   });
@@ -30,9 +30,9 @@ describe("virtual memory", () => {
     const es = new ExternalStorage(8192);
     const vm = new VirtualMemory(pm, es, 4);
 
-    const machineCode = "10101010".repeat(15872);
+    const machineCode = "10101010".repeat(4096);
     es.load("10000000000000000000000000000001" + machineCode);
-    vm.loadProgram(0, machineCode, 15872);
+    vm.loadProgram(0, machineCode, 4096);
 
     // get dword at virtual address 0 to cause vm to load the first page from es into pm:
     vm.getDword(0, 0);

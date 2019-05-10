@@ -27,7 +27,7 @@ class PhysicalMemory {
 
   checkBounds(dwordStart) {
     if (dwordStart + 32 > this.storage.length) {
-      throw new Error("Out of bounds physical memory access.");
+      throw new Error(`Out of bounds physical memory access: ${dwordStart}`);
     }
   }
 }

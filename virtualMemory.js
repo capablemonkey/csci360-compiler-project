@@ -51,11 +51,11 @@ class VirtualMemory {
     const pageOffset = this.getPageOffset(virtualAddress);
     const hit = this.pageTable[pid][virtualPageIndex];
 
-    console.log(virtualPageIndex)
-    console.log(pageOffset)
-    console.log(hit)
+    if (!hit) {
+      throw new Error(`couldn't find the page for the virtual address ${virtualAddress}`)
+    }
 
-    if (hit && hit.location == "physicalMemory" && hit.valid == true) {
+    if (hit.location == "physicalMemory" && hit.valid == true) {
       const pageStart = hit.pageIndex * this.pageSize;
       return this.physicalMemory.getDword(pageStart + pageOffset);
     } else {
@@ -70,7 +70,7 @@ class VirtualMemory {
       };
 
      // read from physical memory
-     return this.physicalMemory.getDword(physicalPageIndex * this.pageSize * 4 + pageOffset);
+     return this.physicalMemory.getDword(physicalPageIndex * this.pageSize + pageOffset);
     }
   }
 
@@ -105,11 +105,6 @@ class VirtualMemory {
     const virtualPageIndex = this.getVirtualPageIndex(virtualAddress);
     const pageOffset = this.getPageOffset(virtualAddress);
     const hit = this.pageTable[pid][virtualPageIndex];
-
-    console.log(virtualPageIndex);
-    console.log(pageOffset);
-    console.log(this.pageTable[pid]);
-    console.log(hit);
 
     if (hit.location == "physicalMemory" && hit.valid == true) {
       const pageStart = hit.pageIndex * this.pageSize;
@@ -172,7 +167,7 @@ class VirtualMemory {
   // total addressable code: 4096 bytes = 1024 dwords = 256 pages
 
   getVirtualPageIndex(virtualAddress) {
-    return Math.floor(virtualAddress / 4);
+    return Math.floor(virtualAddress / 16);
   }
 
   getPageOffset(virtualAddress) {
