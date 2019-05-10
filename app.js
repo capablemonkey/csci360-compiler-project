@@ -3,7 +3,7 @@
 
 function fillTable(table, data){
   let text = "<tr>";
-  for(let i=0; i<1024; i++){
+  for(let i=0; i<2048; i++){
     text += "<td>" + i + "</td>";
     text += "<td>" + data[i] + "</td>";
     if(i%8 === 7)
@@ -57,9 +57,7 @@ function fillStatistics(table, cache) {
 
 //Converts input to ASCII binary and populates
 //the source code part of the External Storage
-function toBinary(sourceCode, fillTable){
-  const table = document.getElementById('external-source');
-  const externalStorage = [];
+function toASCII(sourceCode, externalStorage) {
   sourceCode.forEach(function(element){
     if(element === 'int' || element === 'return'){
       element += ' ';
@@ -71,11 +69,9 @@ function toBinary(sourceCode, fillTable){
   });
   while(externalStorage.length < 1024)
     externalStorage.push('00000000');
-  fillTable(table, externalStorage);
 }
 
-function compile(string) {
-  const tokens = tokenize(string);
+function compile(tokens) {
   const parser = new Parser(tokens);
   const parseTree = parser.parse();
   const functions = parseTree.functions;
@@ -113,6 +109,7 @@ $(document).ready(function() {
 
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
     $('#assembly').text(output);
+<<<<<<< HEAD
   });
   $('.button-initialize').click(function(){ // initialize computer object here
     const cacheSpecs = {
@@ -133,4 +130,7 @@ $(document).ready(function() {
     //fillMemory(document.getElementById('memory'), );
   });
   
+=======
+  })
+>>>>>>> master
 })

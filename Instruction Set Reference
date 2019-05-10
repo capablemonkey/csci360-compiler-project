@@ -1,0 +1,74 @@
+General-Purpose Registers
+EAX = 0
+EBX = 1
+ECX = 2
+EDX = 3
+ESI = 4
+EDI = 5
+ESP = 6
+EBP = 7
+PC = 8
+
+//x = register
+//y = memory
+//z = immediate
+//j = instruction
+lea register, memory
+[1000 1101][0000 1111][xxxx][yyyy yyyy yyyy]
+push register
+[0000 0110][0000 xxxx][0000 0000][0000 0000]
+pop register
+[0000 0111][0000 xxxx][0000 0000][0000 0000]
+ret
+[1100 0010][0000 0000 0000 0000 0000 0000]
+call instruction
+[1110 1000][jjjj jjjj jjjj jjjj jjjj jjjj]
+
+mov register, register
+[1000 1001][0000 0000][0000 xxxx][0000 xxxx]
+mov memory, register
+[1000 1001][1111 0000][yyyy yyyy yyyy][xxxx]
+mov register, memory
+[1000 1011][0000 1111][xxxx][yyyy yyyy yyyy]
+mov register, reg+4*reg
+[1000 1011][1111 XXXX][0000 xxxx][0000 XXXX]
+mov register, immediate
+[1100 0110][0000 xxxx][zzzz zzzz zzzz zzzz]
+mov memory, memory
+//Can't do memory to memory
+mov memory, immediate
+[1111][yyyy yyyy yyyy][zzzz zzzz zzzz zzzz]
+add register, register
+[0000 0001][0000 0000][0000 xxxx][0000 xxxx]
+add register, immediate
+[0000 0101][0000 xxxx][zzzz zzzz zzzz zzzz]
+sub register, register
+[0010 1001][0000 0000][0000 xxxx][0000 xxxx]
+sub register, immediate
+[0010 1101][0000 xxxx][zzzz zzzz zzzz zzzz]
+
+cmp register, register
+[0011 1001][0000 0000][0000 xxxx][0000 xxxx]
+cmp register, memory
+[0011 1011][0000 1111][xxxx][yyyy yyyy yyyy]
+cmp register, reg+4*reg
+[0011 1011][1111 XXXX][0000 xxxx][0000 XXXX]
+cmp register, immediate
+[0011 1101][0000 xxxx][zzzz zzzz zzzz zzzz]
+cmp memory, register	//Not used
+[0011 1001][1111 0000][yyyy yyyy][xxxx xxxx]
+
+jmp instruction
+[1110 1001][jjjj jjjj jjjj jjjj jjjj jjjj]
+jg instruction
+[1000 1111][jjjj jjjj jjjj jjjj jjjj jjjj]
+jl instruction
+[1000 1100][jjjj jjjj jjjj jjjj jjjj jjjj]
+je instruction
+[1000 0100][jjjj jjjj jjjj jjjj jjjj jjjj]
+jge instruction
+[1000 1101][jjjj jjjj jjjj jjjj jjjj jjjj]
+jle instruction
+[1000 1110][jjjj jjjj jjjj jjjj jjjj jjjj]
+jne instruction
+[1000 0101][jjjj jjjj jjjj jjjj jjjj jjjj]

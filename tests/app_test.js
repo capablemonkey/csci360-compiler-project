@@ -1,6 +1,7 @@
 describe("end-to-end", () => {
   it("should compile basic function", () => {
-    const result = compile("int main() { int foo = 3; return foo; }");
+    const tokens = tokenize("int main() { int foo = 3; return foo; }")
+    const result = compile(tokens);
     const expected = `
 main():
 push rbp
