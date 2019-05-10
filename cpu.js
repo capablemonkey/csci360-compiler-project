@@ -203,7 +203,7 @@ class CPU {
       const register = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers['rbp'] + parseInt(values["address"], 2);
 
-      this.currentInstruction = `lea ${register}, DWORD[rbp${parseInt(values["address"], 2)}]`;
+      this.currentInstruction = `lea ${register}, DWORD[rbp - ${parseInt(values["address"], 2)}]`;
       this.registers[registerNameA] = address;
     });
   }
@@ -291,7 +291,7 @@ class CPU {
 
       const address = this.registers["rbp"] - parseInt(values["memory"], 2);
 
-      this.currentInstruction = `mov ${registerName}, DWORD[rbp${parseInt(values["memory"], 2)}]`;
+      this.currentInstruction = `mov ${registerName}, DWORD[rbp - ${parseInt(values["memory"], 2)}]`;
       const value = parseInt(this.memory.getDword({address: address}), 2);
       this.registers[registerName] = value;
     });
@@ -315,7 +315,7 @@ class CPU {
       const address = this.registers["rbp"] - parseInt(values["address"], 2);
       const immediateBinary = values["immediate"].padStart(32,0);
 
-      this.currentInstruction = `mov DWORD[rbp${parseInt(values["address"], 2)}], ${parseInt(values["immediate"], 2)}`;
+      this.currentInstruction = `mov DWORD[rbp - ${parseInt(values["address"], 2)}], ${parseInt(values["immediate"], 2)}`;
       this.memory.setDword({address: address, data: immediateBinary});
     });
   }
@@ -325,7 +325,7 @@ class CPU {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers["rbp"] - parseInt(values["address"], 2);
 
-      this.currentInstruction = `mov DWORD[rbp${parseInt(values["address"], 2)}], ${registerName}`;
+      this.currentInstruction = `mov DWORD[rbp - ${parseInt(values["address"], 2)}], ${registerName}`;
       const value = this.registers[registerName];
       this.memory.setDword({address: address, data:intToNBytes(value, 4)});
     });
@@ -420,7 +420,7 @@ class CPU {
       const address = this.registers["rbp"] + parseInt(values["address"], 2);
       const value = parseInt(this.memory.getDword({address: address}), 2);
 
-      this.currentInstruction = `cmp ${registerName}, DWORD[rbp${parseInt(values["address"], 2)}]`;
+      this.currentInstruction = `cmp ${registerName}, DWORD[rbp - ${parseInt(values["address"], 2)}]`;
 
       if(this.registers[registerName] === value)
         this.registers["zf"] = 1;
@@ -439,8 +439,7 @@ class CPU {
       const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"]]]
                     + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]);
       const value = parseInt(this.memory.getDword({address: address}), 2);
-      this.currentInstruction = `cmp ${registerName}, DWORD[${BINARY_TO_REGISTER[values["baseAddrRegister"]]}+4*
-                                                            ${BINARY_TO_REGISTER[values["offsetRegister"]]}]`;
+      this.currentInstruction = `cmp ${registerName}, DWORD[${BINARY_TO_REGISTER[values["baseAddrRegister"]]}+4*${BINARY_TO_REGISTER[values["offsetRegister"]]}]`;
 
       if(this.registers[registerName] === value)
         this.registers["zf"] = 1;
