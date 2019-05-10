@@ -12,8 +12,8 @@ describe("physical memory", () => {
 
   it("should be able to get and set last dword", () => {
     const pm = new PhysicalMemory(64, 4);
-    pm.setDword(15, "10101111000000001010101000000001");
-    expect(pm.getDword(15)).to.equal("10101111000000001010101000000001");
+    pm.setDword(60, "10101111000000001010101000000001");
+    expect(pm.getDword(60)).to.equal("10101111000000001010101000000001");
   });
 
   it("should raise an error for out of bounds", () => {
