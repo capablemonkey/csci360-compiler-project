@@ -150,6 +150,7 @@ $(document).ready(function() {
       k: cacheSpecs.blockSize,
     });
     computer.loadProgram(machineCodeStorage);
+    computer.start();
   });
   $('.button-step').click(function(){
     step(computer);

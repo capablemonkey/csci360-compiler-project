@@ -94,9 +94,23 @@ class Computer {
     this.virtualMemory.loadProgram(pid, 0, programSizeDwords);
   }
 
+  start() {
+    const startAddress = swap(this.cpu.LabelTable)["main()"];
+    console.log("start", (startAddress - 1) * 4)
+    this.cpu.registers["pc"] = (startAddress) * 4;
+  }
+
   step() {
     this.cpu.step();
   }
+}
+
+function swap(obj){
+  var ret = {};
+  for(var key in obj){
+    ret[obj[key]] = key;
+  }
+  return ret;
 }
 
 const BINARY_TO_REGISTER = {
@@ -204,7 +218,7 @@ class CPU {
       const address = this.registers['rbp'] + parseInt(values["address"], 2);
 
       this.currentInstruction = `lea ${register}, DWORD[rbp - ${parseInt(values["address"], 2)}]`;
-      this.registers[registerNameA] = address;
+      this.registers[register] = address;
     });
   }
 
@@ -455,7 +469,7 @@ class CPU {
   jmp(instruction) {
     return this.checkMatch(/^11101001(?<instructionLocation>\d{24})$/, instruction, (values) => {
       const instructionLocation = parseInt(values["instructionLocation"],2);
-      labelName = this.LabelTable[instructionLocation];
+      const labelName = this.LabelTable[instructionLocation];
       this.currentInstruction = `jmp ${labelName}`;
       this.registers["pc"] = instructionLocation;
     });
