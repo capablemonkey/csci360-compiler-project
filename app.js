@@ -46,10 +46,12 @@ function fillCache(table, cache) {
 
 // not sure how memory is structured so 
 function fillMemory(table, memory) {
-  let text = '';
+  let text = '<tr><th>address</th><th>binary</th><th>dec</th></tr>';
   for (let i = 0; i < memory.length; i+=32) {
-    const address = i/8
-    text += "<tr><td>" + address +"</td><td>" + memory.substring(i, i+32) + "</td></tr>"
+    const address = i/8;
+    const binary = memory.substring(i, i+32);
+    const dec = parseInt(binary, 2);
+    text += `<tr><td>${address}</td><td>${binary}</td><td>${dec}</td></tr>`
   }
   table.innerHTML = text;
 }
