@@ -30,7 +30,7 @@ class VirtualMemory {
     this.externalStorage = externalStorage;
     this.pageSize = pageSize; // number of dwords per page
 
-    this.virtualAddressSpaceMax = 4096; // biggest virtual page number is 4096 / 4 - 1 = 1023
+    this.virtualAddressSpaceMax = 4096; // biggest virtual page number is 4096 / 16 - 1 = 255
     this.stackLimitBytes = 512; // bytes
 
     // this.pageTable[pid][address] = {"location": "physicalMemory", "pageIndex": 34, "valid": true}
@@ -51,12 +51,12 @@ class VirtualMemory {
     const pageOffset = this.getPageOffset(virtualAddress);
     const hit = this.pageTable[pid][virtualPageIndex];
 
-    console.log(virtualPageIndex)
-    console.log(pageOffset)
-    console.log(hit)
+    if (!hit) {
+      throw new Error(`couldn't find the page for the virtual address ${virtualAddress}`)
+    }
 
-    if (hit && hit.location == "physicalMemory" && hit.valid == true) {
-      const pageStart = hit.pageIndex * this.pageSize;
+    if (hit.location == "physicalMemory" && hit.valid == true) {
+      const pageStart = hit.pageIndex * this.pageSize * 4;
       return this.physicalMemory.getDword(pageStart + pageOffset);
     } else {
       // its on external storage, so load into physical memory
@@ -70,7 +70,7 @@ class VirtualMemory {
       };
 
      // read from physical memory
-     return this.physicalMemory.getDword(physicalPageIndex * this.pageSize * 4 + pageOffset);
+     return this.physicalMemory.getDword(physicalPageIndex * this.pageSize + pageOffset);
     }
   }
 
@@ -78,12 +78,12 @@ class VirtualMemory {
     // find a page to free up in physical memory
     // load all the dwords from the external page into the physical page
     const freePageIndex = this.freePage();
-    const physicalMemoryPageStartAddress = freePageIndex * this.pageSize;
+    const physicalMemoryPageStartAddress = freePageIndex * this.pageSize * 4;
     const externalStoragePageStartAddress = externalStoragePageIndex * this.pageSize;
 
     for (let i = 0; i < this.pageSize; i++) {
       const dword = this.externalStorage.getDword(externalStoragePageStartAddress + i);
-      this.physicalMemory.setDword(physicalMemoryPageStartAddress + i, dword);
+      this.physicalMemory.setDword(physicalMemoryPageStartAddress + i * 4, dword);
     }
 
     return freePageIndex;
@@ -106,6 +106,10 @@ class VirtualMemory {
     const pageOffset = this.getPageOffset(virtualAddress);
     const hit = this.pageTable[pid][virtualPageIndex];
 
+    if (!hit) {
+      throw new Error(`couldn't find the page for the virtual address ${virtualAddress}`)
+    }
+
     if (hit.location == "physicalMemory" && hit.valid == true) {
       const pageStart = hit.pageIndex * this.pageSize;
       return this.physicalMemory.setDword(pageStart + pageOffset, dword);
@@ -116,15 +120,15 @@ class VirtualMemory {
 
   allocateStack(pid) {
     // create pages in page table for stack
-    // pageTable[1023] = {location: "physicalMemory", pageIndex: 64}
-    // pageTable[1022] = {location: "physicalMemory", pageIndex: 63}
+    // pageTable[255] = {location: "physicalMemory", pageIndex: 64}
+    // pageTable[254] = {location: "physicalMemory", pageIndex: 63}
 
     const stackPageCount = this.stackLimitBytes / 16; // 4 dwords = 16 bytes per page
     for (let i = 0; i < stackPageCount; i++) {
-      const virtualPageNumber = 1023 - i;
+      const virtualPageNumber = 255 - i;
       const physicalPageNumber = 63 - i;
 
-      this.pageTable[pid][virtualPageNumber] = {location: "physicalMemory", pageIndex: physicalPageNumber};
+      this.pageTable[pid][virtualPageNumber] = {location: "physicalMemory", pageIndex: physicalPageNumber, valid: true};
     }
   }
 
@@ -138,7 +142,7 @@ class VirtualMemory {
       const virtualPageNumber = i;
       const physicalPageNumber = i;
 
-      this.pageTable[pid][virtualPageNumber] = {location: "externalStorage", pageIndex: physicalPageNumber};
+      this.pageTable[pid][virtualPageNumber] = {location: "externalStorage", pageIndex: physicalPageNumber, valid: true};
     }
 
     this.allocateStack(pid);
@@ -156,7 +160,7 @@ class VirtualMemory {
   //                    = 4 instructions per page
   //                    = 16 bytes
   // 
-  // total virtual address space = 2 ^ 12 = 4096 addressable dwords = 16384 bytes
+  // total virtual address space = 2 ^ 12 bytes = 4096 bytes = 1024 dwords
   // physical memory is 1024 bytes = 2^10
   // stack limit: 512 bytes (we always keep these pages around)
   // remaining for code pages = 512 bytes = 32 pages
@@ -164,13 +168,13 @@ class VirtualMemory {
   // 10 pages = 160 bytes = 40 instructions * 4 bytes/instruction
   // to fill up all the code pages, we need at least 512 bytes = 128 instructions
   // 
-  // total addressable code: 15872 bytes = 992 pages
+  // total addressable code: 4096 bytes = 1024 dwords = 256 pages
 
   getVirtualPageIndex(virtualAddress) {
-    return Math.floor(virtualAddress / 4);
+    return Math.floor(virtualAddress / 16);
   }
 
   getPageOffset(virtualAddress) {
-    return virtualAddress % 4;
+    return virtualAddress % 16;
   }
 }

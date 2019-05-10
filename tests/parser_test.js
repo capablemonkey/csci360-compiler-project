@@ -70,7 +70,7 @@ describe("parser", () => {
               value: "array",
               type: "address",
               order: 0,
-              dataType: "int *"
+              dataType: "int*"
             })
           ]
         })
@@ -151,7 +151,7 @@ describe("parser", () => {
               value: "array",
               type: "address",
               order: 0,
-              dataType: "int *"
+              dataType: "int*"
             })
           ]
         })

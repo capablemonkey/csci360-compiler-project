@@ -10,7 +10,7 @@ describe("compiler", () => {
       };
 
       const instruction = d.toAssembly(symbolTable);
-      expect(instruction).to.equal("mov DWORD PTR [rbp - 4], 5");
+      expect(instruction).to.equal("mov DWORD PTR [rbp-4], 5");
     });
   });
 });
