@@ -235,8 +235,9 @@ class CPU {
       this.stack.pop();
       this.registers['pc'] = getDword(this.registers['rsp']);
       this.registers['rsp'] += 4;
-      if(this.stack.length === 0)
-        //End of program
+      if(this.stack.length === 0) {
+        throw new Error("end of program?");
+      }
     });
   }
 
@@ -488,8 +489,8 @@ class CPU {
   getState() {
     return {
       "registers": this.registers,
-      "stack": this.stack
-      "currentInstruction": this.currentInstruction;
+      "stack": this.stack,
+      "currentInstruction": this.currentInstruction
     };
   }
 
