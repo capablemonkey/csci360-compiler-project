@@ -56,7 +56,7 @@ class VirtualMemory {
     }
 
     if (hit.location == "physicalMemory" && hit.valid == true) {
-      const pageStart = hit.pageIndex * this.pageSize;
+      const pageStart = hit.pageIndex * this.pageSize * 4;
       return this.physicalMemory.getDword(pageStart + pageOffset);
     } else {
       // its on external storage, so load into physical memory
@@ -78,12 +78,12 @@ class VirtualMemory {
     // find a page to free up in physical memory
     // load all the dwords from the external page into the physical page
     const freePageIndex = this.freePage();
-    const physicalMemoryPageStartAddress = freePageIndex * this.pageSize;
+    const physicalMemoryPageStartAddress = freePageIndex * this.pageSize * 4;
     const externalStoragePageStartAddress = externalStoragePageIndex * this.pageSize;
 
     for (let i = 0; i < this.pageSize; i++) {
       const dword = this.externalStorage.getDword(externalStoragePageStartAddress + i);
-      this.physicalMemory.setDword(physicalMemoryPageStartAddress + i, dword);
+      this.physicalMemory.setDword(physicalMemoryPageStartAddress + i * 4, dword);
     }
 
     return freePageIndex;
@@ -105,6 +105,10 @@ class VirtualMemory {
     const virtualPageIndex = this.getVirtualPageIndex(virtualAddress);
     const pageOffset = this.getPageOffset(virtualAddress);
     const hit = this.pageTable[pid][virtualPageIndex];
+
+    if (!hit) {
+      throw new Error(`couldn't find the page for the virtual address ${virtualAddress}`)
+    }
 
     if (hit.location == "physicalMemory" && hit.valid == true) {
       const pageStart = hit.pageIndex * this.pageSize;
@@ -171,6 +175,6 @@ class VirtualMemory {
   }
 
   getPageOffset(virtualAddress) {
-    return virtualAddress % 4;
+    return virtualAddress % 16;
   }
 }

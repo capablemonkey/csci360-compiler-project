@@ -24,9 +24,14 @@ class Cache {
         this.memory = memory;
     }
 
+    // getDword({address}) {
+    //     console.log("trying to get address", address)
+    //     return this.memory.getDword(0, address);
+    // }
+
     getDword({ address }) {
         address = address.toString(2).padStart(this.bits, 0);
-        const setIndex = this.isCacheHit(address);
+        let setIndex = this.isCacheHit(address);
         const { index, offset, tag } = this.extractBits(address);
         if (setIndex >= 0) { // if it was found
             // get the data minus the valid bit and the tags length
@@ -36,15 +41,24 @@ class Cache {
             return data; // should return the data not the address
         }
         // pull from memory
+        setIndex = this.lruReplacement({address: address}).setIndex
+        
         const decimalAddress = this.toDecimal(address); // translate to decimal | WHAT PART OF THE ADDRESS 
         const blockStartAddress = decimalAddress - 4*offset; // go to start of block
-        const returnData = '';
+        let returnData = '';
+        console.log("address:", address);
+        console.log("blockStartAddress:", blockStartAddress);
+        console.log("decimalAddress:", decimalAddress);
         for (let b = 0; b < this.k; b++) { // iterate k forward
             const currentAddress = blockStartAddress + 4*b;
             const currentTag = this.extractBits(currentAddress.toString(2).padStart(this.bits, 0)).tag;
-            const data = this.memory.getDword(currentAddress);
-            if (b == offset)
+            const data = this.memory.getDword(0, currentAddress);
+            if (b == offset) {
                 returnData = data;
+            }
+            console.log("index", index)
+            console.log("setIndex", setIndex)
+            console.log("b", b)
             this.cache[setIndex][index][b].data = `${1}${currentTag}${data}`;// load all into blocks
             this.cache[setIndex][index][b].time = 0;
         }
@@ -54,6 +68,7 @@ class Cache {
 
     // writes a piece of data from an address to the cache
     setDword({  address, data, memwrite = true }) {
+        address = address.toString(2).padStart(this.bits, 0);
         const { index, offset, tag } = this.extractBits(address);
         const setIndex = this.isCacheHit(address);
         const decimalAddress = this.toDecimal(address);

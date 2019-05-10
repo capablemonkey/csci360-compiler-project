@@ -357,7 +357,7 @@ function parseAss(assembly, LabelTable) {
         if(line[j].includes(','))
           line[j] = line[j].substring(0, line[j].length-1);
         if(!line[j].includes('+4*')){//rbp-4
-          addressOffset = line[j].slice(4, line[j].length-1);
+          addressOffset = line[j].slice(5, line[j].length-1);
           operand = memoryOperand(addressOffset);
         }
         else {//rcx+4*rdx

@@ -39,12 +39,12 @@ describe("virtual memory", () => {
 
     // check contents of memory:
     expect(pm.getDword(0)).to.equal("10000000000000000000000000000001");
-    expect(pm.getDword(1)).to.equal("10101010101010101010101010101010");
-    expect(pm.getDword(2)).to.equal("10101010101010101010101010101010");
-    expect(pm.getDword(3)).to.equal("10101010101010101010101010101010");
+    expect(pm.getDword(4)).to.equal("10101010101010101010101010101010");
+    expect(pm.getDword(8)).to.equal("10101010101010101010101010101010");
+    expect(pm.getDword(12)).to.equal("10101010101010101010101010101010");
 
     // adjacent dword should be untouched at this point:
-    expect(pm.getDword(4)).to.equal("00000000000000000000000000000000");
+    expect(pm.getDword(16)).to.equal("00000000000000000000000000000000");
   });
 
   it("should write to the correct place in physical memory", () => {
@@ -55,13 +55,13 @@ describe("virtual memory", () => {
     vm.allocateStack(0);
 
     // set last dword in virtual memory
-    vm.setDword(0, 1023, "10101111000000001010101000000001");
+    vm.setDword(0, 4092, "10101111000000001010101000000001");
 
     // retrieve the last dword in physical memory and it should be the same
     expect(pm.getDword(255), "10101111000000001010101000000001");
 
     // the last dword in virtual memory should also be the same
-    expect(vm.getDword(0, 1023), "10101111000000001010101000000001");
+    expect(vm.getDword(0, 4092), "10101111000000001010101000000001");
   });
 
   it("should evict the correct code page in physical memory when out of space");

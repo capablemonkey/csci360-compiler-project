@@ -82,19 +82,19 @@ class Computer {
     this.physicalMemory = new PhysicalMemory(1024, pageSize);
     this.virtualMemory = new VirtualMemory(this.physicalMemory, this.externalStorage, pageSize);
 
-    this.cache = new Cache({nway: 4, size: 2, k: 2, bits: 12, virtualMemory: this.virtualMemory});
-    this.cpu = new CPU(this.cache);
+    this.cache = new Cache({nway: 4, size: 2, k: 2, bits: 12, memory: this.virtualMemory});
+    this.cpu = new CPU(this.cache, {});
   }
 
   loadProgram(bits) {
     const pid = 0;
     this.externalStorage.load(bits);
 
-    const programSizeDwords = bits / 32;
+    const programSizeDwords = bits.length / 32;
     this.virtualMemory.loadProgram(pid, 0, programSizeDwords);
   }
 
-  execute() {
+  step() {
     this.cpu.step();
   }
 }
@@ -132,8 +132,8 @@ class CPU {
       "sf": 0,  //sign flag: set to 1 if cmp result is negative, 0 if positive
 
       // TODO: use ebp and esp because they are for 32 bit systems
-      "rbp": 4096,
-      "rsp": 4096,
+      "rbp": 4092,
+      "rsp": 4092,
 
       // TODO: r** registers are for x64... update compiler to use eax, ecx
       "rax": 0,
@@ -150,6 +150,7 @@ class CPU {
   // e.g. "01000000100000000010000000000000"
   execute(instruction) {
     const operations = [
+      this.noop,
       this.lea,
       this.push,
       this.pop,
@@ -183,6 +184,13 @@ class CPU {
     return true;
   }
 
+  // 32 0s = noop
+  noop(instruction){
+    return this.checkMatch(/^0{32}$/, instruction, (values) => {
+      
+    });
+  }
+
   lea(instruction){
     return this.checkMatch(/^1000110100001111(?<register>\d{4})(?<address>\d{12})$/, instruction, (values) => {
       const register = BINARY_TO_REGISTER[values["register"]];
@@ -199,8 +207,8 @@ class CPU {
 
       this.currentInstruction = `push ${register}`;
       this.stack.push(`${register}: ${this.registers[register]}`);
-      this.registers['rsp'] -+ 4;
-      setDword(this.registers['rsp'], intToBytes(this.registers[register], 32));
+      this.registers['rsp'] -= 4;
+      this.memory.setDword({address: this.registers['rsp'], data: intToNBytes(this.registers[register], 32)});
     });
   }
 
@@ -210,7 +218,7 @@ class CPU {
 
       this.currentInstruction = `pop ${register}`;
       this.stack.pop();
-      this.registers[register] = getDword(this.registers['rsp']);
+      this.registers[register] = parseInt(this.memory.getDword({address: this.registers['rsp']}), 2);
       this.registers['rsp'] += 4;
     });
   }
@@ -223,7 +231,7 @@ class CPU {
       this.currentInstruction = `call ${labelName}`;
       this.stack.push(`Return Address: ${this.registers['pc']} \n ${labelName}`);
       this.registers['rsp'] -= 4;
-      setDword(this.registers['rsp'], intToBytes(this.registers['pc'], 32));
+      this.memory.setDword({address: this.registers['rsp'], data: intToNBytes(this.registers['pc'], 32)});
       this.registers['pc'] = instructionLocation;
     });
   }
@@ -233,7 +241,7 @@ class CPU {
 
       this.currentInstruction = `ret`;
       this.stack.pop();
-      this.registers['pc'] = getDword(this.registers['rsp']);
+      this.registers['pc'] = parseInt(this.memory.getDword({address: this.registers['rsp']}), 2);
       this.registers['rsp'] += 4;
       if(this.stack.length === 0) {
         throw new Error("end of program?");
@@ -248,8 +256,10 @@ class CPU {
 
       this.currentInstruction = `mov ${registerNameA}, ${registerNameB}`;
       this.registers[registerNameA] = this.registers[registerNameB];
-      if(registerNameA === 'rbp' && registerNameB === 'rsp'){
-        while(!this.stack[this.stack.length].include('rbp'))
+
+      // suspicious of this:
+      if(registerNameA === 'rsp' && registerNameB === 'rbp'){
+        while(!this.stack[this.stack.length - 1].includes('rbp'))
           this.stack.pop();
       }
     });
@@ -268,10 +278,14 @@ class CPU {
   movMemoryToRegister(instruction) {
     return this.checkMatch(/^1000101100001111(?<register>\d{4})(?<memory>\d{12})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
-      const address = this.registers["rbp"] + parseInt(values["address"], 2);
 
-      this.currentInstruction = `mov ${registerName}, DWORD[rbp${parseInt(values["address"], 2)}]`;
-      const value = parseInt(getDword(address));
+      console.log("rbp", this.registers["rbp"]);
+      console.log("memory", parseInt(values["memory"], 2));
+
+      const address = this.registers["rbp"] - parseInt(values["memory"], 2);
+
+      this.currentInstruction = `mov ${registerName}, DWORD[rbp${parseInt(values["memory"], 2)}]`;
+      const value = parseInt(this.memory.getDword({address: address}), 2);
       this.registers[registerName] = value;
     });
   }
@@ -284,29 +298,29 @@ class CPU {
 
       this.currentInstruction = `mov ${registerName}, DWORD[${BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]}+4*
                                                             ${BINARY_TO_REGISTER[values["offsetRegister"]]}]`;
-      const value = parseInt(getDword(address));
+      const value = parseInt(this.memory.getDword({address: address}), 2);
       this.registers[registerName] = value;
     });
   }
 
   movImmediateToMemory(instruction) {
     return this.checkMatch(/^1111(?<address>\d{12})(?<immediate>\d{16})$/, instruction, (values) => {
-      const address = this.registers["rbp"] + parseInt(values["address"], 2);
+      const address = this.registers["rbp"] - parseInt(values["address"], 2);
       const immediateBinary = values["immediate"].padStart(32,0);
 
       this.currentInstruction = `mov DWORD[rbp${parseInt(values["address"], 2)}], ${parseInt(values["immediate"], 2)}`;
-      this.memory.setWord(address, immediateBinary);
+      this.memory.setDword({address: address, data: immediateBinary});
     });
   }
 
   movRegisterToMemory(instruction) {
     return this.checkMatch(/^1000100111110000(?<address>\d{12})(?<register>\d{4})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
-      const address = this.registers["rbp"] + parseInt(values["address"], 2);
+      const address = this.registers["rbp"] - parseInt(values["address"], 2);
 
       this.currentInstruction = `mov DWORD[rbp${parseInt(values["address"], 2)}], ${registerName}`;
       const value = this.registers[registerName];
-      this.memory.setDword(address, intToNBytes(value, 4));
+      this.memory.setDword({address: address, data:intToNBytes(value, 4)});
     });
   }
 
@@ -336,11 +350,12 @@ class CPU {
       let immediateInt = parseInt(values["immediate"], 2);
 
       this.currentInstruction = `sub ${registerName}, ${immediateInt}`;
-      this.registers[registerName] += immediateInt;
+      this.registers[registerName] -= immediateInt;
+
       if(registerName === 'rsp'){
-        while(immediateInt != 0){
-          this.stack.push(`DWORD[rbp${immediateInt}]`);
-          immediateInt += 4;
+        while(immediateInt >= 0){
+          this.stack.push(`DWORD[rbp - ${immediateInt}]`);
+          immediateInt -= 4;
         }
       }
     });
@@ -396,7 +411,7 @@ class CPU {
     return this.checkMatch(/^0011101100001111(?<register>\d{4})(?<address>\d{12})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["registerA"]];
       const address = this.registers["rbp"] + parseInt(values["address"], 2);
-      const value = parseInt(this.memory.getDword(address));
+      const value = parseInt(this.memory.getDword({address: address}), 2);
 
       this.currentInstruction = `cmp ${registerName}, DWORD[rbp${parseInt(values["address"], 2)}]`;
 
@@ -416,7 +431,7 @@ class CPU {
       const registerName = BINARY_TO_REGISTER[values["register"]];
       const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]]
                     + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]);
-      const value = parseInt(getDword(address));
+      const value = parseInt(this.memory.getDword({address: address}), 2);
       this.currentInstruction = `cmp ${registerName}, DWORD[${BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]}+4*
                                                             ${BINARY_TO_REGISTER[values["offsetRegister"]]}]`;
 
@@ -481,8 +496,11 @@ class CPU {
   }
   // TODO: test me
   step() {
-    nextInstruction = this.memory.getDword(this.registers["pc"]);
-    execute(nextInstruction);
+    console.log("state", this.getState())
+    const nextInstruction = this.memory.getDword({address: this.registers["pc"]});
+    console.log("about to execute:", nextInstruction)
+    this.execute(nextInstruction);
+    console.log("that was:", this.currentInstruction)
     this.registers["pc"] += 4;
   }
 
