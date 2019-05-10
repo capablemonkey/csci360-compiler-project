@@ -202,13 +202,13 @@ class CPU {
   // 32 0s = noop
   noop(instruction){
     return this.checkMatch(/^0{32}$/, instruction, (values) => {
-      
+
     });
   }
 
   label(instruction){
     return this.checkMatch(/^00000000(?<label>\d{24})$/, instruction, (values) => {
-      
+
     });
   }
 
@@ -520,7 +520,7 @@ class CPU {
     const nextInstruction = this.memory.getDword({address: this.registers["pc"]});
     console.log("about to execute:", nextInstruction)
     this.execute(nextInstruction);
-    console.log("that was:", this.currentInstruction)
+    console.log("that was:", this.currentInstruction);
     this.registers["pc"] += 4;
   }
 

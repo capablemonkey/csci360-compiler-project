@@ -290,13 +290,12 @@ class ASMInstruction {
       case 'call':{
         for(let i=0; i<this.operand1.value.length; i++){
           if(this.operand1.value[i] === '('){
-            this.operand1.value = this.operand1.value.slice(0, i+1);
+            this.operand1.value = this.operand1.value.slice(0, i+1)+ ')'
           }
         }
-        this.operand1.value += ')';
         this.operand1.value = findInstructionNumber(LabelTable, this.operand1.value);
-        const instAddress = toBinaryOperand(this.operand1);
-        machineCode = `11101000${instAddress}`;
+        const instAddress = this.operand1.value.toString(2).padStart(24, '0');
+        machineCode = `11101000${instAddress}`; console.log(machineCode);
         break;
       }
       case 'ret':{
