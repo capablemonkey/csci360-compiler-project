@@ -18,6 +18,6 @@ describe("physical memory", () => {
 
   it("should raise an error for out of bounds", () => {
     const pm = new PhysicalMemory(64, 4);
-    expect(() => pm.getDword(16)).to.throw();
+    expect(() => pm.getDword(64)).to.throw();
   });
 });
