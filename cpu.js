@@ -300,7 +300,7 @@ class CPU {
   movArrayElementToRegister(instruction) {
     return this.checkMatch(/^100010111111(?<baseAddrRegister>\d{4})0000(?<register>\d{4})0000(?<offsetRegister>\d{4})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
-      const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]]
+      const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"]]]
                     + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]);
 
       this.currentInstruction = `mov ${registerName}, DWORD[${BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]}+4*
@@ -436,10 +436,10 @@ class CPU {
   cmpArrayElement(instruction) {
     return this.checkMatch(/^001110111111(?<baseAddrRegister>\d{4})0000(?<register>\d{4})0000(?<offsetRegister>\d{4})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["register"]];
-      const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]]
+      const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"]]]
                     + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]);
       const value = parseInt(this.memory.getDword({address: address}), 2);
-      this.currentInstruction = `cmp ${registerName}, DWORD[${BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]}+4*
+      this.currentInstruction = `cmp ${registerName}, DWORD[${BINARY_TO_REGISTER[values["baseAddrRegister"]]}+4*
                                                             ${BINARY_TO_REGISTER[values["offsetRegister"]]}]`;
 
       if(this.registers[registerName] === value)
