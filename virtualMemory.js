@@ -79,10 +79,10 @@ class VirtualMemory {
     // load all the dwords from the external page into the physical page
     const freePageIndex = this.freePage();
     const physicalMemoryPageStartAddress = freePageIndex * this.pageSize * 4;
-    const externalStoragePageStartAddress = externalStoragePageIndex * this.pageSize;
+    const externalStoragePageStartAddress = externalStoragePageIndex * this.pageSize * 4;
 
     for (let i = 0; i < this.pageSize; i++) {
-      const dword = this.externalStorage.getDword(externalStoragePageStartAddress + i);
+      const dword = this.externalStorage.getDword(externalStoragePageStartAddress + i * 4);
       this.physicalMemory.setDword(physicalMemoryPageStartAddress + i * 4, dword);
     }
 

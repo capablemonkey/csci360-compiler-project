@@ -13,12 +13,12 @@ describe("external storage", () => {
 
   it("can get and set last dword", () => {
     const es = new ExternalStorage(8192); // 8 kb
-    es.setDword(2047, "10101111000000001010101000000001");
-    expect(es.getDword(2047)).to.equal("10101111000000001010101000000001");
+    es.setDword(8188, "10101111000000001010101000000001");
+    expect(es.getDword(8188)).to.equal("10101111000000001010101000000001");
   });
 
   it("should raise an error for out of bounds", () => {
     const es = new ExternalStorage(8192); // 8 kb
-    expect(() => es.getDword(2048)).to.throw();
+    expect(() => es.getDword(8192)).to.throw();
   });
 });

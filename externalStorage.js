@@ -10,7 +10,7 @@ class ExternalStorage {
 
   // returns the 32 bits (dword) at address
   getDword(address) {
-    const dwordStart = address * 32;
+    const dwordStart = address * 8;
     this.checkBounds(dwordStart);
 
     return this.storage.slice(dwordStart, dwordStart + 32);
@@ -18,7 +18,7 @@ class ExternalStorage {
 
   // sets the 32 bit string dword at the address
   setDword(address, dword) {
-    const dwordStart = address * 32;
+    const dwordStart = address * 8;
     this.checkBounds(dwordStart);
 
     let k = this.storage.split("");
