@@ -60,7 +60,7 @@ class CallerArgument extends Node {
         return `mov ${argumentRegister} ${this.value}`;
       case 'address': // handles references & pointers
         address = symbolTable[this.value] * -1;
-        return [`lea rax, [rbp-${address}]`, `mov ${argumentRegister}, rax`];
+        return [`lea rax, DWORD PTR [rbp-${address}]`, `mov ${argumentRegister}, rax`];
       default:
         throw `Invalid argument type: ${this.type}`;
     }
