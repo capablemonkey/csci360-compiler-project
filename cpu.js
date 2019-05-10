@@ -466,7 +466,7 @@ class CPU {
     return this.checkMatch(/^1000(?<condition>\d{4})(?<instructionLocation>\d{24})$/, instruction, (values) => {
       const condition = values["condition"];
       const instructionLocation = parseInt(values["instructionLocation"],2);
-      labelName = this.LabelTable[instructionLocation];
+      const labelName = this.LabelTable[instructionLocation];
       switch(condition){
         case '1111'://jg
           this.currentInstruction = `jg ${labelName}`;

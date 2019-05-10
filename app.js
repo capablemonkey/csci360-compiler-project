@@ -133,13 +133,14 @@ $(document).ready(function() {
       size: Number.parseInt($('#cache-size').first().val().trim()),
       blockSize: Number.parseInt($('#block-size').first().val().trim()),
     };
-    computer = new Computer({});
+
     const code = $('.editor-textbox').first().val();
     const tokens = tokenize(code);
     const {parseTree, output} = compile(tokens);
     const LabelTable = {}
     const allInstructions = parseAss(output,LabelTable);
     const machineCodeStorage = translateInstructions(allInstructions, LabelTable).join("");
+    computer = new Computer(LabelTable);
     computer.loadProgram(machineCodeStorage);
   });
   $('.button-step').click(function(){
@@ -150,5 +151,6 @@ $(document).ready(function() {
     fillCache(document.getElementById('cache'), computer.cpu.memory.cache);
     fillMemory(document.getElementById('memory'), computer.physicalMemory.storage);
     fillStack(document.getElementById('stack'), computer.cpu.stack);
+    $("#current-instruction").text(computer.cpu.currentInstruction);
   });
 })
