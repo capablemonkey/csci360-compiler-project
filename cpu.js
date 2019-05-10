@@ -70,32 +70,32 @@
 // 0111: rbp
 // 1000: pc
 
-
-// Simple mapping of address => byte value for now until we have our
-// fancier memory in place.
-class Memory {
+class Computer {
+  /*
+    CPU -> cache -> virtual memory -> physicalMemory
+                       |                   ^
+                       \> externalStorage -/
+   */
   constructor() {
-    this.addressToByte = {};
+    const pageSize = 4;
+    this.externalStorage = new ExternalStorage(8192);
+    this.physicalMemory = new PhysicalMemory(1024, pageSize);
+    this.virtualMemory = new VirtualMemory(this.physicalMemory, this.externalStorage, pageSize);
+
+    this.cache = new Cache({nway: 4, size: 2, k: 2, bits: 12, virtualMemory: this.virtualMemory});
+    this.cpu = new CPU(this.cache);
   }
 
-  // address is an integer
-  // Dword is 4 bytes represented as a string of 1s and 0s
-  getDword(address) {
-    const word = [
-      this.addressToByte[address],
-      this.addressToByte[address + 1],
-      this.addressToByte[address + 2],
-      this.addressToByte[address + 3],
-    ].join("");
+  loadProgram(bits) {
+    const pid = 0;
+    this.externalStorage.load(bits);
 
-    return word;
+    const programSizeDwords = bits / 32;
+    this.virtualMemory.loadProgram(pid, 0, programSizeDwords);
   }
 
-  setDword(address, word) {
-    this.addressToByte[address] = word.slice(0, 8);
-    this.addressToByte[address + 1] = word.slice(8, 16);
-    this.addressToByte[address + 2] = word.slice(16, 24);
-    this.addressToByte[address + 3] = word.slice(24, 32);
+  execute() {
+    this.cpu.step();
   }
 }
 
@@ -117,7 +117,7 @@ function intToNBytes(integer, n) {
 }
 
 class CPU {
-  constructor(LabelTable) {
+  constructor(cache, LabelTable) {
     // integer values:
     this.registers = {
       "eax": 0,
@@ -130,6 +130,7 @@ class CPU {
       "pc": 0,
       "zf": 0,  //zero flag: set to 1 if cmp result equal, 1 if not equal
       "sf": 0,  //sign flag: set to 1 if cmp result is negative, 0 if positive
+
       // TODO: use ebp and esp because they are for 32 bit systems
       "rbp": 4096,
       "rsp": 4096,
@@ -141,7 +142,7 @@ class CPU {
     this.LabelTable = LabelTable;
     this.startInstruction = 0;
     this.stack = [];
-    this.memory = new Memory();
+    this.memory = cache;
     this.currentInstruction = 'Program Start';
   }
 
@@ -394,7 +395,7 @@ class CPU {
     return this.checkMatch(/^0011101100001111(?<register>\d{4})(?<address>\d{12})$/, instruction, (values) => {
       const registerName = BINARY_TO_REGISTER[values["registerA"]];
       const address = this.registers["rbp"] + parseInt(values["address"], 2);
-      const value = parseInt(getDword(address));
+      const value = parseInt(this.memory.getDword(address));
 
       this.currentInstruction = `cmp ${registerName}, DWORD[rbp${parseInt(values["address"], 2)}]`;
 
@@ -479,9 +480,9 @@ class CPU {
   }
   // TODO: test me
   step() {
-    this.registers["pc"] += 4;
     nextInstruction = this.memory.getDword(this.registers["pc"]);
     execute(nextInstruction);
+    this.registers["pc"] += 4;
   }
 
   getState() {
