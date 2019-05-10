@@ -5,8 +5,8 @@ describe("cache", () => {
             const memory = new Map();
             const cache = new Cache({ nway: 1, size: 8, k: 2, memory: memory, bits: 16 });
             const address = '0000000000000000';
-            cache.write({ address: address, data: '00000000000000000000000000000001', memwrite: true });
-            expect(cache.read({ address: address })).to.equal("00000000000000000000000000000001");
+            cache.setDword({ address: address, data: '00000000000000000000000000000001', memwrite: true });
+            expect(cache.getDword({ address: address })).to.equal("00000000000000000000000000000001");
         });
         // This test will need to be altered when memory object is created
         // check memory.get == what I want 
@@ -14,8 +14,8 @@ describe("cache", () => {
             const memory = new Map();
             const cache = new Cache({ nway: 1, size: 8, k: 2, memory: memory, bits: 16 });
             const address = '0000000000000000';
-            cache.write({ address: address, data: '00000000000000000000000000000001', memwrite: true });
-            expect(cache.read({ address: address })).to.equal(cache.memory.get(address));
+            cache.setDword({ address: address, data: '00000000000000000000000000000001', memwrite: true });
+            expect(cache.getDword({ address: address })).to.equal(cache.memory.get(address));
         });
 
         // isCacheHit test
@@ -28,7 +28,7 @@ describe("cache", () => {
             // initialize different data that maps to the same set, index, and offset
             const data = '00000000000000000000000000000001';
             // write the data sequentially 
-            cache.write({ address: address, data: data, memwrite: true });
+            cache.setDword({ address: address, data: data, memwrite: true });
             // verify that the old data is not there
             expect(cache.isCacheHit(address)).to.not.equal(-1); // original address should be replaced
         });
@@ -45,12 +45,12 @@ describe("cache", () => {
             const data = '00000000000000000000000000000001';
             const otherData = '01000000000000000000000000000010';
             // write the data sequentially 
-            cache.write({ address: address, data: data, memwrite: true });
-            cache.write({ address: otherAddress, data: otherData, memwrite: true });
+            cache.setDword({ address: address, data: data, memwrite: true });
+            cache.setDword({ address: otherAddress, data: otherData, memwrite: true });
             // verify that the old data is not there
             expect(cache.isCacheHit(address)).to.equal(-1); // original address should be replaced
             // verify that replacing data is present
-            expect(cache.read({ address: otherAddress })).to.equal( otherData );
+            expect(cache.getDword({ address: otherAddress })).to.equal( otherData );
         });
     });
   });
