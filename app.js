@@ -31,9 +31,10 @@ function fillCache(table, cache) {
   let text = "<tr>";
   const rows = cache[0].length;
   const sets = cache.length;
+  const blocks = cache[0][0].length;
   for (let r = 0; r < rows; r++) { //  1 1    0 0
     for (let s = 0; s < sets; s++) {  //  1 1    0 0
-      for (let b = 0; b < cache[s][r].length; b++) {
+      for (let b = 0; b < blocks; b++) {
         text += "<td>" + cache[s][r][b].data + "  </td>";
       }
       text += "<td>    </td>"; // gap between sets
@@ -66,10 +67,10 @@ function fillStack(table, stack) {
 }
 
 function fillStatistics(table, cache) {
-  let text = "<tr><td> Miss Rate </td></tr>";
-  text += "<tr><td> " + cache.getMissRate() + "</td></tr>";
-  text += "<tr><td> Replacement Rate </td></tr>";
-  text += "<tr><td> " + cache.getReplacementRate() + "</td></tr>";
+  let text = "<tr><td> Miss Rate: </td>";
+  text += "<td> " + cache.getMissRate() + "</td></tr>";
+  text += "<tr><td> Replacement Rate: </td>";
+  text += "<td> " + cache.getReplacementRate() + "</td></tr>";
   table.innerHTML = text;
 }
 
@@ -108,7 +109,7 @@ function compile(tokens) {
   };
 }
 
-let computer = new Computer({});
+let computer = new Computer({ labelTable: {}, nway: 1, size: 2, k: 2 });
 
 function step(computer) {
   computer.cpu.step();
@@ -121,9 +122,9 @@ $(document).ready(function() {
     const asciiStorage = [];
     toASCII(tokens, asciiStorage);
     const {parseTree, output} = compile(tokens);
-    const LabelTable = {};
-    const allInstructions = parseAss(output,LabelTable);
-    const machineCodeStorage = translateInstructions(allInstructions, LabelTable);
+    const labelTable = {};
+    const allInstructions = parseAss(output,labelTable);
+    const machineCodeStorage = translateInstructions(allInstructions, labelTable);
     const externalStorage = [].concat(asciiStorage, machineCodeStorage);
     fillTable(document.getElementById('external-source'), externalStorage);
 
@@ -136,20 +137,24 @@ $(document).ready(function() {
       size: Number.parseInt($('#cache-size').first().val().trim()),
       blockSize: Number.parseInt($('#block-size').first().val().trim()),
     };
-
     const code = $('.editor-textbox').first().val();
     const tokens = tokenize(code);
     const {parseTree, output} = compile(tokens);
-    const LabelTable = {}
-    const allInstructions = parseAss(output,LabelTable);
-    const machineCodeStorage = translateInstructions(allInstructions, LabelTable).join("");
-    computer = new Computer(LabelTable);
+    const labelTable = {}
+    const allInstructions = parseAss(output,labelTable);
+    const machineCodeStorage = translateInstructions(allInstructions, labelTable).join("");
+    computer = new Computer({ 
+      labelTable: labelTable,
+      nway: cacheSpecs.nway,
+      size: cacheSpecs.size,
+      k: cacheSpecs.blockSize,
+    });
     computer.loadProgram(machineCodeStorage);
   });
   $('.button-step').click(function(){
     step(computer);
-    // This should be all be in a computer object
-    //fillStatistics(document.getElementById('statistics', computer.cpu.memory.statistics))
+    
+    fillStatistics(document.getElementById('statistics'), computer.cpu.memory);
     fillRegisters(document.getElementById('registers'), computer.cpu.registers);
     fillCache(document.getElementById('cache'), computer.cpu.memory.cache);
     fillMemory(document.getElementById('memory'), computer.physicalMemory.storage);

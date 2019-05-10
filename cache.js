@@ -10,13 +10,13 @@ class Cache {
         this.k = k;
         this.nway = nway;
         this.bits = bits;
-        this.statistics = { accesses: 0, misses: 0, total: 0 };
+        this.statistics = { misses: 0, replacements: 0, total: 0 };
         this.cache = Array.from({length: nway},
             () => Array.from({length: size},
                 () => Array.from({length: k},
                     () => {
                         return {
-                            data: '0'.repeat(bits+32), // bits for address + 32 bits for data
+                            data: '0'.repeat(bits+30), // bits for address + 32 bits for data
                             time: 0
                         }
                     }))); // 3D array for n-way set association
@@ -178,12 +178,12 @@ class Cache {
     }
 
     getReplacementRate() {
-        return this.replacementData.replcements / this.replacementData.total;
+        return this.statistics.replacements / this.statistics.total;
     }
 
     // miss rate function, what is the rate in which we are misses / reads and -- writes replacing / writes  //
     getMissRate() {
-        return this.missData.misses / this.missData.total; 
+        return this.statistics.misses / this.statistics.total; 
     }
 
     // initializes 3D array for n-way set association

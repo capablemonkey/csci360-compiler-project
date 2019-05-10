@@ -76,13 +76,13 @@ class Computer {
                        |                   ^
                        \> externalStorage -/
    */
-  constructor(labelTable) {
+  constructor({ labelTable, nway, size, k }) {
     const pageSize = 4;
     this.externalStorage = new ExternalStorage(8192);
     this.physicalMemory = new PhysicalMemory(1024, pageSize);
     this.virtualMemory = new VirtualMemory(this.physicalMemory, this.externalStorage, pageSize);
 
-    this.cache = new Cache({nway: 4, size: 2, k: 2, bits: 12, memory: this.virtualMemory});
+    this.cache = new Cache({nway: nway, size: size, k: k, bits: 12, memory: this.virtualMemory});
     this.cpu = new CPU(this.cache, labelTable);
   }
 
