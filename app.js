@@ -29,8 +29,10 @@ function fillRegisters(table, registers) {
 // displays the cache
 function fillCache(table, cache) {
   let text = "<tr>";
-  for (let r = 0; r < cache[0].length; r++) {
-    for (let s = 0; s < cache.length; i++) {
+  const rows = cache[0].length;
+  const sets = cache.length;
+  for (let r = 0; r < rows; r++) { //  1 1    0 0
+    for (let s = 0; s < sets; s++) {  //  1 1    0 0
       for (let b = 0; b < cache[s][r].length; b++) {
         text += "<td>" + cache[s][r][b] + "  </td>";
       }
@@ -44,7 +46,8 @@ function fillCache(table, cache) {
 
 // not sure how memory is structured so 
 function fillMemory(table, memory) {
-
+  let text = "<tr>";
+  
 }
 
 function fillStatistics(table, cache) {
@@ -109,7 +112,6 @@ $(document).ready(function() {
 
     $('#parse-tree').text(JSON.stringify(parseTree, null, 2));
     $('#assembly').text(output);
-<<<<<<< HEAD
   });
   $('.button-initialize').click(function(){ // initialize computer object here
     const cacheSpecs = {
@@ -128,9 +130,6 @@ $(document).ready(function() {
     //fillRegisters(document.getElementById('registers'), registers);
     //fillCache(document.getElementById('cache'), cache.cache);
     //fillMemory(document.getElementById('memory'), );
+    //fillStack(document.getElementById('stack'), );
   });
-  
-=======
-  })
->>>>>>> master
 })
