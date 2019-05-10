@@ -76,14 +76,14 @@ class Computer {
                        |                   ^
                        \> externalStorage -/
    */
-  constructor() {
+  constructor(labelTable) {
     const pageSize = 4;
     this.externalStorage = new ExternalStorage(8192);
     this.physicalMemory = new PhysicalMemory(1024, pageSize);
     this.virtualMemory = new VirtualMemory(this.physicalMemory, this.externalStorage, pageSize);
 
     this.cache = new Cache({nway: 4, size: 2, k: 2, bits: 12, memory: this.virtualMemory});
-    this.cpu = new CPU(this.cache, {});
+    this.cpu = new CPU(this.cache, labelTable);
   }
 
   loadProgram(bits) {
@@ -140,7 +140,7 @@ class CPU {
       "rcx": 0
     };
     this.LabelTable = LabelTable;
-    this.startInstruction = 0;
+    this.startInstruction = findInstructionNumber(LabelTable, "main()");
     this.stack = [];
     this.memory = cache;
     this.currentInstruction = 'Program Start';
