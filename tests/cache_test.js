@@ -11,7 +11,7 @@ describe("cache", () => {
             vm.loadProgram(0, 0, 4096);
 
             const cache = new Cache({ nway: 1, size: 8, k: 2, memory: vm, bits: 12 });
-            const address = '111111111111';
+            const address = '111111111100';
             cache.setDword({ address: address, data: '00000000000000000000000000000001', memwrite: true });
             expect(cache.getDword({ address: address })).to.equal("00000000000000000000000000000001");
         });
@@ -27,9 +27,12 @@ describe("cache", () => {
             vm.loadProgram(0, 0, 4096);
 
             const cache = new Cache({ nway: 1, size: 8, k: 2, memory: vm, bits: 12 });
-            const address = '111111111111';
-            cache.setDword({ address: address, data: '00000000000000000000000000000001', memwrite: true });
-            expect(cache.getDword({ address: address })).to.equal(cache.memory.getDword(0, parseInt(address, 2)));
+            const address = '111111111100';
+            cache.setDword({ address: address, data: '10000000000000000000000000000001', memwrite: true });
+            console.log("addressLLL", address)
+            console.log(cache.memory.physicalMemory.storage)
+            expect(cache.getDword({ address: address })).to.equal(cache.memory.getDword(0, 4092));
+
         });
 
         // isCacheHit test
@@ -45,7 +48,7 @@ describe("cache", () => {
             // initalize a small cache
             const cache = new Cache({ nway: 1, size: 2, k: 1, memory: vm, bits: 12 });
             // initialize two addresses that map to the same index and offset
-            const address = '111111111111';
+            const address = '111111111100';
             // initialize different data that maps to the same set, index, and offset
             const data = '00000000000000000000000000000001';
             // write the data sequentially 
@@ -67,8 +70,8 @@ describe("cache", () => {
             // initalize a small cache
             const cache = new Cache({ nway: 1, size: 2, k: 1, memory: vm, bits: 12 });
             // initialize two addresses that map to the same index and offset
-            const address = '111111111111';
-            const otherAddress = '111111111101';
+            const address = '111111111010';
+            const otherAddress = '111111111000';
             // initialize different data that maps to the same set, index, and offset
             const data = '00000000000000000000000000000001';
             const otherData = '01000000000000000000000000000010';

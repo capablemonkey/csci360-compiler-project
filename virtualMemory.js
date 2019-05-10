@@ -111,7 +111,7 @@ class VirtualMemory {
     }
 
     if (hit.location == "physicalMemory" && hit.valid == true) {
-      const pageStart = hit.pageIndex * this.pageSize;
+      const pageStart = hit.pageIndex * this.pageSize * 4;
       return this.physicalMemory.setDword(pageStart + pageOffset, dword);
     } else {
       throw new Error(`Could not find page for virtual address ${virtualAddress}`);
