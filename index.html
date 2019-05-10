@@ -70,65 +70,65 @@ int main() {
       </div>
     </div> <br>
 
-    <div class ="sm-section">
-      <h4> Cache Specifications </h4>
-      <h6> N-Way </h6> <!--N-Way Text Field -->
-        <textarea class="input-textbox code-font" id = "nway"> 1 </textarea>
-      <h6> Cache Size </h6> <!--Cache Size Text Field -->
-        <textarea class="input-textbox code-font" id = "cache-size"> 4 </textarea>
-      <h6> Block Size </h6> <!--Block Size Text Field -->
-        <textarea class="input-textbox code-font" id = "block-size"> 2 </textarea>
-    </div>
+    <div class="row section">
+      <div class="col-sm">
+        <h2>Simulation</h2>
 
-    
-    
-    <!--Computer Initializer button-->
-    <button class="button-initialize btn btn-lg btn-primary" type="">Initialize</button><br><br>
+        <button class="button-initialize btn btn-lg btn-primary" type="">Load Program</button>
+        <button class="button-step btn btn-lg btn-primary" type="">Step</button>
 
-    <!--Step button-->
-    <button class="button-step btn btn-lg btn-primary" type="">Step</button>
+        <div class ="sm-section">
+          <h4> Cache Specifications </h4>
+          <h6> N-Way </h6> <!--N-Way Text Field -->
+            <textarea class="input-textbox code-font" id = "nway"> 1 </textarea>
+          <h6> Cache Size </h6> <!--Cache Size Text Field -->
+            <textarea class="input-textbox code-font" id = "cache-size"> 4 </textarea>
+          <h6> Block Size </h6> <!--Block Size Text Field -->
+            <textarea class="input-textbox code-font" id = "block-size"> 2 </textarea>
+        </div>
+      </div>
 
+      <div class="col-sm">
+        <h4>Current Instruction</h4>
+        <div class="rounded bg-light code-font" id="current-instruction">
+        </div>
+      </div>
 
-    <div class ="sm-section">
-      <h4> current instruction </h4>
-      <div class="rounded bg-light code-font" id="current-instruction">
+      <div class="col-sm">
+        <h4>Registers</h4>
+        <table id="registers" class="table code-font"></table>
       </div>
     </div>
 
-    <!-- Registers -->
+    <div class="row section">
+      <div class="col-sm">
+        <h4>Memory</h4>
+        <div class="output code-font">
+          <table id="memory" class="table"></table>
+        </div>
+      </div>
+      <div class="col-sm">
+        <h4>Stack</h4>
+        <div class="output code-font">
+        <table id="stack" class="table"></table>
+      </div>
+      </div>
+    </div>
+
+    <!-- Cache -->
     <div class="section">
-      <h4> Registers </h4>
-      <div class="output rounded bg-light code-font">
-        <table id="registers" class="table-sm"></table>
-      </div>
+        <h4> Cache </h4>
+        <div class="rounded code-font scrolly">
+          <table id="cache" class="table"></table>
+        </div>
     </div>
-    <!-- Stack -->
-    <div class="section">
-      <h4> Stack </h4>
-      <div class="output rounded bg-light code-font">
-        <table id="stack" class="table-sm"></table>
-      </div>
-    </div>
+
     <!-- Statistics -->
     <div class="section">
       <h4> Statistics </h4>
       <div class="sm-output rounded bg-light code-font">
         <table id="statistics" class="table-sm"></table>
       </div>
-    </div>
-    <!-- Cache -->
-    <div class="section">
-        <h4> Cache </h4>
-        <div class="output rounded bg-light code-font">
-          <table id="cache" class="table-sm"></table>
-        </div>
-    </div>
-    <!-- Memory -->
-    <div class="section">
-        <h4> Memory </h4>
-        <div class="output rounded bg-light code-font">
-          <table id="memory" class="table-sm"></table>
-        </div>
     </div>
 
   </div>

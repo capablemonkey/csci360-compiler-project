@@ -19,7 +19,7 @@ function fillRegisters(table, registers) {
   const keys = Object.keys(registers);
   for (let i = 0; i < keys.length; i++) {
     const reg = keys[i];
-    text += "<td>" + reg + " : " + registers[reg] + "</td>";
+    text += "<td>" + reg + "</td><td>" + registers[reg] + "</td>";
     text += "</tr><tr>";
   }
   text += "</tr>";
@@ -48,7 +48,8 @@ function fillCache(table, cache) {
 function fillMemory(table, memory) {
   let text = '';
   for (let i = 0; i < memory.length; i+=32) {
-    text += "<tr><td>" + memory.substring(i, i+32) + "</td></tr>"
+    const address = i/8
+    text += "<tr><td>" + address +"</td><td>" + memory.substring(i, i+32) + "</td></tr>"
   }
   table.innerHTML = text;
 }
