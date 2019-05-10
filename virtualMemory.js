@@ -37,6 +37,9 @@ class VirtualMemory {
     // this.pageTable[pid][address] = {"location": "external", "pageIndex": 200, "valid": false}
     // maps virtual page number to physical page number
     this.pageTable = {0: {}};
+
+    // temporary, non-LRU way to decide which is the next page to allocate:
+    this.lastAllocatedPage = 0;
   }
 
   getDword(pid, virtualAddress) {
@@ -53,7 +56,7 @@ class VirtualMemory {
     console.log(hit)
 
     if (hit && hit.location == "physicalMemory" && hit.valid == true) {
-      const pageStart = hit.pageIndex * this.pageSize * 4; // 4 dwords
+      const pageStart = hit.pageIndex * this.pageSize;
       return this.physicalMemory.getDword(pageStart + pageOffset);
     } else {
       // its on external storage, so load into physical memory
@@ -75,49 +78,39 @@ class VirtualMemory {
     // find a page to free up in physical memory
     // load all the dwords from the external page into the physical page
     const freePageIndex = this.freePage();
-    const physicalMemoryPageStartAddress = freePageIndex * this.pageSize * 4;
-    const externalStoragePageStartAddress = externalStoragePageIndex * this.pageSize * 4;
+    const physicalMemoryPageStartAddress = freePageIndex * this.pageSize;
+    const externalStoragePageStartAddress = externalStoragePageIndex * this.pageSize;
 
     for (let i = 0; i < this.pageSize; i++) {
-      const dword = this.externalStorage.getDword(externalStoragePageStartAddress + i * 4);
-      this.physicalMemory.setDword(physicalMemoryPageStartAddress + i * 4, dword);
+      const dword = this.externalStorage.getDword(externalStoragePageStartAddress + i);
+      this.physicalMemory.setDword(physicalMemoryPageStartAddress + i, dword);
     }
 
     return freePageIndex;
   }
 
-  // finds a free page or chooses one to be replaced
   // returns physical page index
   freePage() {
-    return 0;
+    // TODO: find a free page or choose one to be replaced
+    // TODO: if page is being replaced, find the entry in the page table and delete it
+    return this.lastAllocatedPage++;
   }
 
   // sets dword in physical memory where dword is a string of 32 bits
   setDword(pid, virtualAddress, dword) {
     // check pageTable to see if page is in physical memory
     // if in physical memory, then just update dword in physical memory
-    // otherwise, load from disk into physical memory and then set dword in physical memory
+    // can only set dwords on the stack; not allowed to modify code portion
 
     const virtualPageIndex = this.getVirtualPageIndex(virtualAddress);
-    const pageOffset = this.getVirtualPageOffset(virtualAddress);
+    const pageOffset = this.getPageOffset(virtualAddress);
     const hit = this.pageTable[pid][virtualPageIndex];
 
     if (hit.location == "physicalMemory" && hit.valid == true) {
-      const pageStart = hit.pageIndex * this.pageSize * 4; // 4 dwords
+      const pageStart = hit.pageIndex * this.pageSize;
       return this.physicalMemory.setDword(pageStart + pageOffset, dword);
     } else {
-      // its on external storage, so load into physical memory
-      const physicalPageIndex = this.loadPageToPhysicalMemory(hit.pageIndex);
-
-      // update virtual page table
-      this.pageTable[pid][virtualPageIndex] = {
-        location: "physicalMemory",
-        pageIndex: physicalPageIndex,
-        valid: true
-      };
-
-     // read from physical memory
-     return this.physicalMemory.setDword(physicalPageIndex * this.pageSize * 4 + pageOffset, dword);
+      throw new Error(`Could not find page for virtual address ${virtualAddress}`);
     }
   }
 
@@ -134,7 +127,6 @@ class VirtualMemory {
       this.pageTable[pid][virtualPageNumber] = {location: "physicalMemory", pageIndex: physicalPageNumber};
     }
   }
-
 
   loadProgram(pid, externalStorageStartAddress, lengthBytes) {
     // fill the page table with the pages in the externalStorage, but no pages need to be loaded
