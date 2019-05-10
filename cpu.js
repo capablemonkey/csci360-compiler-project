@@ -317,7 +317,7 @@ class CPU {
       const address = this.registers[BINARY_TO_REGISTER[values["baseAddrRegister"]]]
                     + (4*this.registers[BINARY_TO_REGISTER[values["offsetRegister"]]]);
 
-      this.currentInstruction = `mov ${registerName}, DWORD[${BINARY_TO_REGISTER[values["baseAddrRegister"].padStart(8,'0')]}+4*
+      this.currentInstruction = `mov ${registerName}, DWORD[${BINARY_TO_REGISTER[values["baseAddrRegister"]]}+4*
                                                             ${BINARY_TO_REGISTER[values["offsetRegister"]]}]`;
       const value = parseInt(this.memory.getDword({address: address}), 2);
       this.registers[registerName] = value;
