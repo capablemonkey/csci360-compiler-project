@@ -78,7 +78,7 @@ class Computer {
    */
   constructor() {
     const pageSize = 4;
-    this.externalStorage = new ExternalStorage();
+    this.externalStorage = new ExternalStorage(8192);
     this.physicalMemory = new PhysicalMemory(1024, pageSize);
     this.virtualMemory = new VirtualMemory(this.physicalMemory, this.externalStorage, pageSize);
 

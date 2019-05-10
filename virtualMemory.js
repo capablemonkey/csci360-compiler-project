@@ -30,13 +30,13 @@ class VirtualMemory {
     this.externalStorage = externalStorage;
     this.pageSize = pageSize; // number of dwords per page
 
-    this.virtualAddressSpaceMax = 4096;
-    this.stackLimit = 512; // bytes
+    this.virtualAddressSpaceMax = 4096; // biggest virtual page number is 4096 / 4 - 1 = 1023
+    this.stackLimitBytes = 512; // bytes
 
     // this.pageTable[pid][address] = {"location": "physicalMemory", "pageIndex": 34, "valid": true}
     // this.pageTable[pid][address] = {"location": "external", "pageIndex": 200, "valid": false}
     // maps virtual page number to physical page number
-    this.pageTable = {};
+    this.pageTable = {0: {}};
   }
 
   getDword(pid, virtualAddress) {
@@ -45,8 +45,12 @@ class VirtualMemory {
     // get Dword from block from page
 
     const virtualPageIndex = this.getVirtualPageIndex(virtualAddress);
-    const pageOffset = this.getVirtualPageOffset(virtualAddress);
+    const pageOffset = this.getPageOffset(virtualAddress);
     const hit = this.pageTable[pid][virtualPageIndex];
+
+    console.log(virtualPageIndex)
+    console.log(pageOffset)
+    console.log(hit)
 
     if (hit && hit.location == "physicalMemory" && hit.valid == true) {
       const pageStart = hit.pageIndex * this.pageSize * 4; // 4 dwords
@@ -119,25 +123,31 @@ class VirtualMemory {
 
   allocateStack(pid) {
     // create pages in page table for stack
-    // pageTable[255] = {location: "physicalMemory", pageIndex: 64}
-    // pageTable[254] = {location: "physicalMemory", pageIndex: 63}
-    // ...
-    // pageTable[223] = {location: "physicalMemory", pageIndex: 32}
+    // pageTable[1023] = {location: "physicalMemory", pageIndex: 64}
+    // pageTable[1022] = {location: "physicalMemory", pageIndex: 63}
+
+    const stackPageCount = this.stackLimitBytes / 16; // 4 dwords = 16 bytes per page
+    for (let i = 0; i < stackPageCount; i++) {
+      const virtualPageNumber = 1023 - i;
+      const physicalPageNumber = 63 - i;
+
+      this.pageTable[pid][virtualPageNumber] = {location: "physicalMemory", pageIndex: physicalPageNumber};
+    }
   }
 
 
-  loadProgram(pid, externalStorageStartAddress, lengthDword) {
-    // TODO: fill the page table with the pages in the externalStorage, but no pages need to be loaded
+  loadProgram(pid, externalStorageStartAddress, lengthBytes) {
+    // fill the page table with the pages in the externalStorage, but no pages need to be loaded
     // pageTable[0] => {location: externalStorage, pageIndex: 0}
     // pageTable[1] => {location: externalStorage, pageIndex: 1}
-    //
-    //
-    // for (const i = 0; i < lengthDword; i++) {
-    //   const dword = this.externalStorage.getDword(externalStorageStartAddress + i * 32);
 
-    //   const virtualAddress = i * 4;
-    //   this.setDword(pid, virtualAddress, dword);
-    // }
+    const programPageCount = lengthBytes / 16; // 4 dwords = 16 bytes per page
+    for (let i = 0; i < programPageCount; i++) {
+      const virtualPageNumber = i;
+      const physicalPageNumber = i;
+
+      this.pageTable[pid][virtualPageNumber] = {location: "externalStorage", pageIndex: physicalPageNumber};
+    }
 
     this.allocateStack(pid);
   }
@@ -154,7 +164,7 @@ class VirtualMemory {
   //                    = 4 instructions per page
   //                    = 16 bytes
   // 
-  // total virtual address space = 2 ^ 12 = 4096 addresses
+  // total virtual address space = 2 ^ 12 = 4096 addressable dwords = 16384 bytes
   // physical memory is 1024 bytes = 2^10
   // stack limit: 512 bytes (we always keep these pages around)
   // remaining for code pages = 512 bytes = 32 pages
@@ -162,12 +172,13 @@ class VirtualMemory {
   // 10 pages = 160 bytes = 40 instructions * 4 bytes/instruction
   // to fill up all the code pages, we need at least 512 bytes = 128 instructions
   // 
+  // total addressable code: 15872 bytes = 992 pages
 
   getVirtualPageIndex(virtualAddress) {
-    return Math.floor(virtualAddress / (this.pageSize * 4));
+    return Math.floor(virtualAddress / 4);
   }
 
   getPageOffset(virtualAddress) {
-    return virtualAddress % (this.pageSize * 4);
+    return virtualAddress % 4;
   }
 }
