@@ -171,7 +171,8 @@ class CPU {
       this.cmpMemory,
       this.cmpArrayElement,
       this.jmp,
-      this.jumpConditional
+      this.jumpConditional,
+      this.label
     ];
 
     // try all of the operations until one pattern is found:
@@ -187,6 +188,12 @@ class CPU {
   // 32 0s = noop
   noop(instruction){
     return this.checkMatch(/^0{32}$/, instruction, (values) => {
+      
+    });
+  }
+
+  label(instruction){
+    return this.checkMatch(/^00000000(?<label>\d{24})$/, instruction, (values) => {
       
     });
   }

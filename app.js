@@ -19,7 +19,7 @@ function fillRegisters(table, registers) {
   const keys = Object.keys(registers);
   for (let i = 0; i < keys.length; i++) {
     const reg = keys[i];
-    text += "<td>" + reg + " : " + registers[key] + "</td>";
+    text += "<td>" + reg + " : " + registers[reg] + "</td>";
     text += "</tr><tr>";
   }
   text += "</tr>";
@@ -34,7 +34,7 @@ function fillCache(table, cache) {
   for (let r = 0; r < rows; r++) { //  1 1    0 0
     for (let s = 0; s < sets; s++) {  //  1 1    0 0
       for (let b = 0; b < cache[s][r].length; b++) {
-        text += "<td>" + cache[s][r][b] + "  </td>";
+        text += "<td>" + cache[s][r][b].data + "  </td>";
       }
       text += "<td>    </td>"; // gap between sets
     }
@@ -46,8 +46,20 @@ function fillCache(table, cache) {
 
 // not sure how memory is structured so 
 function fillMemory(table, memory) {
-  let text = "<tr>";
-  
+  let text = '';
+  for (let i = 0; i < memory.length; i+=32) {
+    text += "<tr><td>" + memory.substring(i, i+32) + "</td></tr>"
+  }
+  table.innerHTML = text;
+}
+
+// not sure how memory is structured so 
+function fillStack(table, stack) {
+  let text = '';
+  for (let i = 0; i < stack.length; i++) {
+    text += "<tr><td>" + stack[i] + "  </td></tr>";
+  }
+  table.innerHTML = text;
 }
 
 function fillStatistics(table, cache) {
@@ -93,6 +105,8 @@ function compile(tokens) {
   };
 }
 
+let computer = new Computer({});
+
 function step(computer) {
   computer.cpu.step();
 }
@@ -119,17 +133,22 @@ $(document).ready(function() {
       size: Number.parseInt($('#cache-size').first().val().trim()),
       blockSize: Number.parseInt($('#block-size').first().val().trim()),
     };
+    computer = new Computer({});
+    const code = $('.editor-textbox').first().val();
+    const tokens = tokenize(code);
+    const {parseTree, output} = compile(tokens);
+    const LabelTable = {}
+    const allInstructions = parseAss(output,LabelTable);
+    const machineCodeStorage = translateInstructions(allInstructions, LabelTable).join("");
+    computer.loadProgram(machineCodeStorage);
   });
   $('.button-step').click(function(){
-    step();
+    step(computer);
     // This should be all be in a computer object
-    //const cpu = new CPU();
-    //const registers = cpu.registers;
-    //const cache = new Cache();
-    //fillStatistics(document.getElementById('statistics', cache))
-    //fillRegisters(document.getElementById('registers'), registers);
-    //fillCache(document.getElementById('cache'), cache.cache);
-    //fillMemory(document.getElementById('memory'), );
-    //fillStack(document.getElementById('stack'), );
+    //fillStatistics(document.getElementById('statistics', computer.cpu.memory.statistics))
+    fillRegisters(document.getElementById('registers'), computer.cpu.registers);
+    fillCache(document.getElementById('cache'), computer.cpu.memory.cache);
+    fillMemory(document.getElementById('memory'), computer.physicalMemory.storage);
+    fillStack(document.getElementById('stack'), computer.cpu.stack);
   });
 })
