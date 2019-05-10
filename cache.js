@@ -1,10 +1,3 @@
-// Split apart data and instruction cache for xtra points
-// use a system bus to bring blocks to CPU for extra points
-/* Cache object modeling 32 bit system */
-// 5/7 project 2 deadline
-// final exam 5/14 deadline
-// implement N way set association
-// 
 class Cache {
     /* 
         nway: the degree of set association
@@ -17,8 +10,7 @@ class Cache {
         this.k = k;
         this.nway = nway;
         this.bits = bits;
-        this.missData = { misses: 0, total: 0 };
-        this.replacementData = { replcements: 0, total: 0 };
+        this.statistics = { accesses: 0, misses: 0, total: 0 };
         this.cache = Array.from({length: nway},
             () => Array.from({length: size},
                 () => Array.from({length: k},
@@ -32,10 +24,11 @@ class Cache {
         this.memory = memory;
     }
 
-    read({ address }) {
+    getDword({ address }) {
+        address = address.toString(2).padStart(this.bits, 0);
         const setIndex = this.isCacheHit(address);
+        const { index, offset, tag } = this.extractBits(address);
         if (setIndex >= 0) { // if it was found
-            const { index, offset, tag } = this.extractBits(address);
             // get the data minus the valid bit and the tags length
             const data = this.cache[setIndex][index][offset].data.substr(1+tag.length);
             this.updateTimes({ setIndex: setIndex, index: index, offset: offset });
@@ -43,13 +36,24 @@ class Cache {
             return data; // should return the data not the address
         }
         // pull from memory
-        const data = this.memory.get(address);
-        this.write({address: address, data: data, memwrite: false}); // no memwrite
-        return data;
+        const decimalAddress = this.toDecimal(address); // translate to decimal | WHAT PART OF THE ADDRESS 
+        const blockStartAddress = decimalAddress - 4*offset; // go to start of block
+        const returnData = '';
+        for (let b = 0; b < this.k; b++) { // iterate k forward
+            const currentAddress = blockStartAddress + 4*b;
+            const currentTag = this.extractBits(currentAddress.toString(2).padStart(this.bits, 0)).tag;
+            const data = this.memory.getDword(currentAddress);
+            if (b == offset)
+                returnData = data;
+            this.cache[setIndex][index][b].data = `${1}${currentTag}${data}`;// load all into blocks
+            this.cache[setIndex][index][b].time = 0;
+        }
+        this.recordMiss();
+        return returnData;
     }
 
     // writes a piece of data from an address to the cache
-    write({  address, data, memwrite = true }) {
+    setDword({  address, data, memwrite = true }) {
         const { index, offset, tag } = this.extractBits(address);
         const setIndex = this.isCacheHit(address);
         
@@ -57,12 +61,11 @@ class Cache {
             this.cache[setIndex][index][offset].data = `${1}${tag}${data}`;
             this.recordAccess();
         } else { // not in the cache, we need to bring it into the cache 
-            this.recordMiss();
             const {setIndex, offset} = this.lruReplacement({ address: address });
             this.cache[setIndex][index][offset].data = `${1}${tag}${data}`;
         }
         this.updateTimes({ setIndex: setIndex, index: index, offset: offset });
-        if (memwrite) this.memory.set(address, data); // write through //
+        if (memwrite) this.memory.setDword(address, data); // write through //
     }
 
     // searches n-way cache and returns the i'th cache if data exists in cache, else returns -1
@@ -124,18 +127,19 @@ class Cache {
         for (let i = 0; i < this.cache.length; i++) // for every set
             if (this.cache[i][index][offset].data[0] == 0) { // if valid bit == 0, nothing at this index
                 maxIndices.setIndex = i;
+                this.recordMiss();
                 return maxIndices;
             } else if (maxTime < this.cache[i][index][offset].time) {
                 maxTime = this.cache[i][index][offset].time;
                 maxIndices.setIndex = i;
             }
         // if replacing write replaced one to memory
-
+        this.recordReplacement();
         return maxIndices;
     }
 
     // increments all times in the cache, and resets the time at provided indices
-    updateTimes({ setIndex, index, offset}) {
+    updateTimes({ setIndex, index, offset }) {
         for (let i = 0; i < this.cache.length; i++)
             for (let j = 0; j < this.cache[i].length; j++)
                 for (let k = 0; k < this.cache[i][j].length; k++)
@@ -145,18 +149,17 @@ class Cache {
     }
 
     recordReplacement() {
-        this.replacementData.replacements++;
-        this.replacementData.total++;
+        this.statistics.replacements++;
+        this.statistics.total++;
     }
 
     recordMiss() {
-        this.missData.misses++;
-        this.missData.total++;
+        this.statistics.misses++;
+        this.statistics.total++;
     }
 
     recordAccess() {
-        this.missData.total++;
-        this.replacementData.total++;
+        this.statistics.total++;
     }
 
     getReplacementRate() {
